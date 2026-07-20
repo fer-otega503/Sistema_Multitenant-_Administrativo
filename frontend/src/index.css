@@ -1,0 +1,16 @@
+/* frontend/src/index.css */
+
+/* Eliminamos márgenes, paddings y bloqueamos el scroll en toda la web */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Evita estrictamente que aparezcan barras de scroll */
+  background-color: #0a0d16; /* Color de fondo base uniforme */
+}
+
+/* Evitamos que layouts previos de Vite interfieran */
+* {
+  box-sizing: border-box;
+}
