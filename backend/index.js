@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes'); // 🔌 Importamos el paquete de rutas de seguridad que creamos por separado
+const analyticsRoutes = require('./routes/analyticsRoutes'); // 🔌 Importamos el puente hacia el servicio Python
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json()); // Hace que nuestro servidor entienda datos en formato 
 // Esto le dice a Express que todo lo que esté en 'authRoutes' empezará con '/api/auth'
 // Ejemplos: /api/auth/login  y  /api/auth/usuarios
 app.use('/api/auth', authRoutes);
+app.use('/api/analytics', analyticsRoutes); // Montamos las rutas analíticas
 
 // ------------------------------------------
 // 🔍 ENDPOINTS DE PRUEBA (Los de control inicial)

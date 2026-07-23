@@ -1,77 +1,134 @@
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const pool = require('../db'); // Subimos una carpeta para importar la base de datos
 
-// 🔐 Lógica para iniciar sesión
-const login = async (req, res) => {
-  const { email, password, tenant } = req.body;
+/**
+ * Registro de Usuarios (Admin o Empleado)
+ * Guarda la contraseña de forma segura usando bcryptjs en el esquema del tenant.
+ */
+const registrarUsuario = async (req, res) => {
+  const { nombre, email, password, rol } = req.body;
 
-  if (!email || !password || !tenant) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios: email, password o tenant' });
+  if (!nombre || !email || !password || !rol) {
+    return res.status(400).json({
+      error: 'Faltan campos obligatorios: nombre, email, password, rol'
+    });
+  }
+
+  const rolesPermitidos = ['Admin', 'Empleado'];
+  if (!rolesPermitidos.includes(rol)) {
+    return res.status(400).json({
+      error: `Rol inválido. Debe ser uno de los siguientes: ${rolesPermitidos.join(', ')}`
+    });
   }
 
   try {
-    // Buscamos dinámicamente en el esquema del inquilino (tenant)
-    const userQuery = `SELECT * FROM ${tenant}.users WHERE email = $1`;
-    const result = await pool.query(userQuery, [email]);
+    // 🔐 Hashear la contraseña con bcryptjs
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Consulta aislada al esquema definido previamente en req.db por tenantMiddleware
+    const query = `
+      INSERT INTO users (nombre, email, password, rol)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, nombre, email, rol;
+    `;
+
+    const result = await req.db.query(query, [
+      nombre,
+      email.toLowerCase().trim(),
+      hashedPassword,
+      rol
+    ]);
+
+    res.status(201).json({
+      mensaje: 'Usuario registrado exitosamente',
+      tenant_id: req.tenant_id,
+      usuario: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error en registrarUsuario:', error);
+
+    // Código 23505 = Restricción Unique violada (Email duplicado)
+    if (error.code === '23505') {
+      return res.status(400).json({
+        error: 'El correo electrónico ya se encuentra registrado en esta empresa.'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Error interno del servidor al registrar el usuario.'
+    });
+  }
+};
+
+/**
+ * Login de Usuarios
+ * Valida credenciales contra el esquema tenant y emite un token JWT que incluye rol y tenant_id.
+ */
+const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({
+      error: 'Faltan datos requeridos: email, password'
+    });
+  }
+
+  try {
+    // Buscar el usuario dentro del esquema del inquilino (establecido en req.db)
+    const query = `SELECT id, nombre, email, password, rol FROM users WHERE email = $1`;
+    const result = await req.db.query(query, [email.toLowerCase().trim()]);
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'El correo o la contraseña no coinciden' });
+      return res.status(401).json({
+        error: 'Credenciales inválidas (correo o contraseña incorrectos).'
+      });
     }
 
     const usuario = result.rows[0];
 
-    if (password !== usuario.password) { 
-      return res.status(401).json({ error: 'El correo o la contraseña no coinciden' });
+    // 🔑 Verificar la contraseña encriptada con bcryptjs
+    const passwordMatch = await bcrypt.compare(password, usuario.password);
+    if (!passwordMatch) {
+      return res.status(401).json({
+        error: 'Credenciales inválidas (correo o contraseña incorrectos).'
+      });
     }
 
-    // Creamos el Token JWT con los datos clave del usuario y su empresa
+    // 🎫 Construir el payload del Token JWT con rol y tenant_id
+    const payload = {
+      id: usuario.id,
+      email: usuario.email,
+      rol: usuario.rol,          // 'Admin' o 'Empleado'
+      tenant_id: req.tenant_id   // Nombre del esquema (ej. 'schema_ferreteria')
+    };
+
     const token = jwt.sign(
-      { id: usuario.id, rol: usuario.rol, tenant: tenant }, 
-      process.env.JWT_SECRET || 'clave_secreta_temporal',
-      { expiresIn: '2h' }
+      payload,
+      process.env.JWT_SECRET || 'clave_secreta_multitenant',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
 
     res.json({
-      message: '¡Login exitoso! Bienvenido al sistema',
+      mensaje: '¡Inicio de sesión exitoso!',
       token,
-      usuario: { nombre: usuario.nombre, rol: usuario.rol, tenant }
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        email: usuario.email,
+        rol: usuario.rol,
+        tenant_id: req.tenant_id
+      }
     });
-
   } catch (error) {
     console.error('Error en login:', error);
-    res.status(500).json({ error: 'Hubo un fallo en el servidor al intentar iniciar sesión' });
-  }
-};
-
-// 👥 Lógica para registrar un nuevo usuario (empleado)
-const registrarUsuario = async (req, res) => {
-  const { nombre, rol, email, password } = req.body;
-
-  if (!nombre || !rol || !email || !password) {
-    return res.status(400).json({ error: 'Faltan datos para registrar al empleado.' });
-  }
-
-  try {
-    const esquemaEmpresa = req.tenant; // El middleware ya extrajo esto del token JWT
-
-    const query = `
-      INSERT INTO ${esquemaEmpresa}.users (nombre, rol, email, password)
-      VALUES ($1, $2, $3, $4) RETURNING id, nombre, rol, email;
-    `;
-    
-    const result = await pool.query(query, [nombre, rol, email, password]);
-    
-    res.status(201).json({
-      mensaje: `Empleado registrado con éxito en la empresa: ${esquemaEmpresa}`,
-      usuarioCreado: result.rows[0]
+    res.status(500).json({
+      error: 'Error interno del servidor al procesar el inicio de sesión.'
     });
-  } catch (error) {
-    console.error('Error al crear usuario:', error);
-    if (error.code === '23505') {
-      return res.status(400).json({ error: 'Este correo electrónico ya está registrado.' });
-    }
-    res.status(500).json({ error: 'Fallo interno al crear el usuario.' });
   }
 };
 
-module.exports = { login, registrarUsuario };
+module.exports = {
+  registrarUsuario,
+  login
+};

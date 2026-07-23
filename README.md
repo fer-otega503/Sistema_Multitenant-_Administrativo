@@ -1,83 +1,85 @@
-# Sistema Administrativo de Ventas Multitenant
+# Sistema Multitenant Administrativo
 
-Este es el repositorio principal (Monorepo) para el Producto Mínimo Viable (MVP) del sistema de ventas. El proyecto utiliza una arquitectura orientada a servicios (SOA) con soporte multitenant, separando los datos de cada cliente mediante esquemas aislados dentro de la misma base de datos (Schema-per-tenant).
+Este es un proyecto completo que incluye un frontend en React (Vite), un backend principal en Node.js (Express) y un servicio de analítica en Python (FastAPI).
 
-## Tecnologías Utilizadas
+## Requisitos Previos
 
-* **Backend:** Node.js con el framework Express.js.
-* **Frontend:** React, inicializado mediante Vite.
-* **Base de Datos:** PostgreSQL.
-* **Infraestructura:** Entorno local utilizando Docker y Docker Compose.
+Asegúrate de tener instalados los siguientes componentes antes de comenzar:
+- **Node.js** (v18 o superior recomendado) - Para el frontend y backend principal.
+- **Python** (3.8 o superior) - Para el servicio de analítica.
+- **PostgreSQL** - Base de datos para el backend multitenant (asegúrate de configurar las variables de entorno o tenerlo corriendo localmente).
 
 ---
 
-## Configuración Inicial (Solo la primera vez)
+## 1. Instalación de Dependencias
 
-### 1. Preparar el Backend
-Abre tu terminal, entra a la carpeta del backend e instala las dependencias:
-```bash
-cd backend
-npm install
-```
-> **Nota importante:** Pide el archivo `.env` al administrador o equipo de desarrollo y colócalo dentro de la carpeta `backend`.
-
-### 2. Preparar el Frontend
-Entra a la carpeta del frontend e instala las librerías necesarias:
+### Frontend
+Abre una terminal y navega a la carpeta del frontend para instalar las dependencias:
 ```bash
 cd frontend
 npm install
 ```
 
-### 3. Levantar la Base de Datos e Inicializar Tablas
-Primero, asegúrate de iniciar el contenedor de PostgreSQL en segundo plano desde la raíz del proyecto:
-```bash
-docker-compose up -d
-```
-Luego, desde la carpeta del backend, ejecuta el script de inicialización. Esto creará el esquema base y aislará las tablas (Users, Products, Sells):
+### Backend Principal (Node.js)
+Abre otra terminal, navega a la carpeta del backend e instala sus dependencias:
 ```bash
 cd backend
-node init-db.js
+npm install
 ```
+
+### Backend Analítico (Python)
+Abre otra terminal, navega a la carpeta del servicio analítico e instala los paquetes necesarios usando `pip`:
+```bash
+cd analytics-service
+pip install -r requirements.txt
+```
+> **Nota:** Se recomienda crear y activar un entorno virtual (`python -m venv venv` y `source venv/bin/activate` o `venv\Scripts\activate` en Windows) antes de instalar las dependencias de Python.
 
 ---
 
-## Ejecución del Proyecto (Día a Día)
+## 2. Ejecución del Proyecto (Cómo arrancar todo)
 
-Para trabajar en el proyecto, te recomendamos abrir tres pestañas en tu terminal y ejecutar estos comandos en el siguiente orden:
+Para que el proyecto funcione en su totalidad con la integración habilitada, debes levantar los tres servicios simultáneamente en terminales separadas.
 
-### Terminal 1: Base de Datos
-*Siempre inicia la base de datos primero desde la raíz del proyecto.*
+### Iniciar el Backend Analítico (Python)
+Este servicio se ejecuta en el puerto **8000**:
 ```bash
-docker-compose up -d
+cd analytics-service
+python main.py
 ```
+> *Si usas uvicorn globalmente también puedes correr: `uvicorn main:app --reload`*
 
-### Terminal 2: Backend
-*Inicia el servidor backend, el cual correrá en el puerto 8090 con recarga automática.*
+### Iniciar el Backend Principal (Node.js)
+Este servicio actúa como servidor principal y como puente (proxy) hacia el servicio analítico. Se ejecuta en el puerto **3000**:
 ```bash
 cd backend
 npm run dev
 ```
 
-### Terminal 3: Frontend
-*Inicia el servidor de desarrollo de la interfaz.*
+### Iniciar el Frontend (React Vite)
+El frontend se conecta al backend de Node.js en el puerto 3000. Para iniciarlo:
 ```bash
 cd frontend
 npm run dev
 ```
-
-> **Verificación:** Por el momento, puedes verificar el estado de la base de datos ingresando a `http://localhost:8090/api/test-db` en tu navegador.
+Normalmente Vite usará el puerto **5173**. Al iniciar, te mostrará la URL local en la terminal (ej. `http://localhost:5173/`).
 
 ---
 
-## Detener Servicios
+## 3. Comprobación de la Integración
+1. Abre tu navegador y navega a la URL del frontend (ej. `http://localhost:5173/`).
+2. Accede con un usuario válido en el login.
+3. Al ingresar, verás la vista "Sección en desarrollo". En esta vista aparecerá una tarjeta verde con el mensaje **"Integración Python Activa ✅"**, lo que confirma que:
+   - El frontend contactó correctamente a Node.js.
+   - Node.js reenvió la petición a Python (FastAPI).
+   - Python respondió y los datos llegaron hasta el frontend de vuelta.
 
-Al terminar tu jornada, es importante liberar los puertos y la memoria de tu equipo deteniendo los servicios correctamente:
+---
 
-1. Ve a las terminales del **Frontend** y **Backend** y presiona `Ctrl + C` para detener las ejecuciones de Node.js.
-2. En la terminal de la **raíz del proyecto**, detén el contenedor de PostgreSQL de forma segura:
-```bash
-docker-compose stop
-```
+## 4. Cómo Detener el Proyecto
 
-----
-Comandos 
+Para parar el proyecto, simplemente ve a cada una de las tres terminales donde tienes corriendo los servicios y presiona:
+
+`Ctrl + C`
+
+Al presionar esto, el proceso se interrumpirá. Asegúrate de hacerlo en las tres terminales (Frontend, Node, Python) para apagar todos los servicios por completo.

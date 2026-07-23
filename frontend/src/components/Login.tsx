@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Hook de React Router para poder movernos entre páginas
 import ShinyText from './ShinyText';
 import { LightRays } from './LightRays'; 
@@ -49,6 +49,18 @@ export function Login() {
 
   // Controla qué pestaña está seleccionada en el menú del área de pruebas
   const [activeTab, setActiveTab] = useState('#home');
+
+  // Guarda el estado del backend de Python (Analytics) para demostrar la integración
+  const [analyticsStatus, setAnalyticsStatus] = useState<any>(null);
+
+  useEffect(() => {
+    if (isSubmitted) {
+      fetch('http://localhost:3000/api/analytics/status')
+        .then(res => res.json())
+        .then(data => setAnalyticsStatus(data))
+        .catch(err => console.error("Error fetching analytics:", err));
+    }
+  }, [isSubmitted]);
 
   // Función sencilla para cambiar entre Admin y Empleado
   const changeRole = (newRole: UserRole) => {
@@ -174,6 +186,17 @@ export function Login() {
             <div style={styles.tenantBadge}>
               <span>Empresa: <strong>{userData.companyName}</strong></span>
               <small style={{ display: 'block', color: '#64748b' }}>ID Tenant: {userData.tenantId}</small>
+            </div>
+          )}
+
+          {/* Muestra el estado del servicio de analítica (Python -> Node) */}
+          {analyticsStatus && (
+            <div style={{...styles.tenantBadge, borderColor: '#10b981'}}>
+              <span style={{ color: '#047857' }}>Integración Python Activa ✅</span>
+              <small style={{ display: 'block', color: '#64748b', marginTop: '4px' }}>
+                Mensaje: {analyticsStatus.message} <br/>
+                Servicio: {analyticsStatus.service}
+              </small>
             </div>
           )}
 
