@@ -1,146 +1,103 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Hook de React Router para poder movernos entre páginas
 import ShinyText from './ShinyText';
 import { LightRays } from './LightRays'; 
 import SpecularButton from './SpecularButton'; 
+// Dado que PillNav está en una subcarpeta, entramos a ./PillNav/PillNav
 import PillNav from './PillNav/PillNav';
-
-// Traemos las funciones que validan que el correo y contraseña cumplan las reglas de seguridad
+// Para el archivo de validación, subimos un nivel y entramos a validation
 import { containsEmojis, validateLoginPassword, validateEmail } from '../validation/security';
 
-// Servicios para mandar la petición de login al backend y guardar la sesión/tokens
+// Importamos los servicios de Autenticación y Tokens que creamos
 import { AuthService } from '../services/auth.service';
 import { TokenService, UserSession } from '../utils/token';
 
-// Ruta estática del logo que mostramos más adelante
+// Definimos el logo usando una ruta estática directa
 const logoUrl = '/src/assets/react.svg';
 
-// Tipo de dato para guardar los mensajes de error del formulario
 interface FormErrors {
   email?: string | null;
   password?: string | null;
 }
 
-// Los dos tipos de roles permitidos en el sistema
-type UserRole = 'Administrador' | 'Empleado';
+
 
 export function Login() {
-  // Hook para cambiar de vista (por ejemplo, regresar al inicio '/')
-  const navigate = useNavigate();
 
-  // --- ESTADOS LOCALES ---
-  // Guarda si entramos como Administrador o Empleado
-  const [role, setRole] = useState<UserRole>('Administrador');
-  
-  // Guarda lo que el usuario va escribiendo en los inputs
   const [credentials, setCredentials] = useState({ email: '', password: '' });
-  
-  // Guarda los mensajes de error si falla la validación
   const [errors, setErrors] = useState<FormErrors>({});
-  
-  // Controla si ya se inició sesión con éxito para cambiar de pantalla
   const [isSubmitted, setIsSubmitted] = useState(false);
-  
-  // Para mostrar estado de "Autenticando..." mientras responde el servidor
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Guarda los datos del usuario que nos regresa la API (nombre, empresa, etc.)
   const [userData, setUserData] = useState<UserSession | null>(null);
 
-  // Controla qué pestaña está seleccionada en el menú del área de pruebas
+  // Estado para la pestaña activa en la navbar del área en desarrollo
   const [activeTab, setActiveTab] = useState('#home');
 
-  // Función sencilla para cambiar entre Admin y Empleado
-  const changeRole = (newRole: UserRole) => {
-    setRole(newRole);
-  };
 
-  // Función que detecta cuando el usuario escribe en los inputs de correo o contraseña
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
-    // Bloqueamos los emojis en la contraseña desde que se van escribiendo
     if (name === 'password' && containsEmojis(value)) {
       setErrors(prev => ({ ...prev, password: "La contraseña no puede contener emojis." }));
       return; 
     }
 
-    // Si escribe algo válido, limpiamos el error del campo
     setErrors(prev => ({ ...prev, [name]: null }));
     setCredentials((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Función principal que procesa el inicio de sesión cuando le dan clic al botón
+  // Petición asíncrona real conectada con el AuthService
   const executeLogin = async (e?: React.FormEvent) => {
     if (e) {
-      e.preventDefault(); // Evitamos que la página se recargue por defecto al enviar el form
+      e.preventDefault();
     }
     
     const currentErrors: FormErrors = {};
 
-    // Validamos la estructura del correo
     const emailValidation = validateEmail(credentials.email);
     if (!emailValidation.isValid) {
       currentErrors.email = emailValidation.message;
     }
 
-    // Validamos las reglas de la contraseña (12 caracteres, sin emojis, etc.)
     const passwordValidation = validateLoginPassword(credentials.password);
     if (!passwordValidation.isValid) {
       currentErrors.password = passwordValidation.message;
     }
 
-    // Si hay algún error en las validaciones, cortamos el proceso y los mostramos en pantalla
     if (Object.keys(currentErrors).length > 0) {
       setErrors(currentErrors);
       return;
     }
 
-    // Si todo está correcto, borramos errores viejos y activamos el loader
     setErrors({});
     setIsLoading(true);
 
     try {
-      // Mandamos los datos al backend mediante el servicio de autenticación
-      const response = await AuthService.login({
-        email: credentials.email,
-        password: credentials.password,
-        role: role
-      });
-
-      console.log(`¡Ingreso exitoso! Empresa asociada: ${response.user.companyName} (${response.user.tenantId})`);
-      
-      // Guardamos la información que nos devolvió el backend y pasamos a la siguiente vista
-      setUserData(response.user);
-      setIsSubmitted(true);
+    
+     
 
     } catch (error: any) {
-      // Si la API falla o los datos están mal, mostramos el mensaje de error recibido
+      // Errores provenientes de la API o problemas de red
       setErrors({
         email: error.message || 'Ocurrió un error al conectar con el servidor.'
       });
     } finally {
-      setIsLoading(false); // Desactivamos la animación de carga sin importar qué pase
+      setIsLoading(false);
     }
   };
 
-  // Función para cerrar la sesión y reiniciar todo al estado inicial
   const handleLogout = () => {
-    TokenService.clearSession(); // Borra tokens guardados
+    TokenService.clearSession();
     setIsSubmitted(false);
     setUserData(null);
     setCredentials({ email: '', password: '' });
   };
 
-  // =========================================================================
-  // 1. VISTA: SECCIÓN POST-LOGIN (Lo que se ve después de iniciar sesión)
-  // =========================================================================
+  // --- VISTA "SECCIÓN EN DESARROLLO" (REJILLA Y RECONOCIMIENTO DE TENANT) ---
   if (isSubmitted) {
     const SafePillNav = PillNav as any;
 
     return (
       <main style={styles.whiteViewport}>
-        {/* Barra de navegación superior con diseño estilo píldora */}
         <header style={styles.navHeader}>
           <SafePillNav
             logo={logoUrl}
@@ -162,14 +119,12 @@ export function Login() {
           />
         </header>
 
-        {/* Mensaje de bienvenida tras autenticarse */}
         <div style={styles.whiteContent}>
           <h1 style={styles.whiteTitle}>Sección en desarrollo</h1>
           <p style={styles.whiteSubtitle}>
-            Has iniciado sesión correctamente como <strong>{userData?.role || role}</strong>.
-          </p>
+        </p>
           
-          {/* Muestra la empresa/tenant detectada por el servidor */}
+          {/* Muestra dinámica del Tenant / Empresa reconocida */}
           {userData?.companyName && (
             <div style={styles.tenantBadge}>
               <span>Empresa: <strong>{userData.companyName}</strong></span>
@@ -177,7 +132,6 @@ export function Login() {
             </div>
           )}
 
-          {/* Botón para salir y regresar al login */}
           <button 
             style={styles.whiteButton} 
             onClick={handleLogout}
@@ -189,23 +143,8 @@ export function Login() {
     );
   }
 
-  // =========================================================================
-  // 2. VISTA: FORMULARIO DE LOGIN PRINCIPAL
-  // =========================================================================
   return (
     <main style={styles.appViewport}>
-      {/* Botón para regresar a la página de bienvenida (Landing page) */}
-      <button 
-        onClick={() => navigate('/')} 
-        style={styles.backButton}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-        Volver al Inicio
-      </button>
-
-      {/* Efecto visual de rayos de luz en el fondo */}
       <LightRays
         raysOrigin="top-center"
         raysColor="#ffffff"
@@ -221,15 +160,13 @@ export function Login() {
         saturation={1}
       />
 
-      {/* Tarjeta translúcida centrada con el formulario */}
+      {/* CONTENEDOR CENTRAL DEL LOGIN */}
       <div style={styles.interfaceLayer}>
         <form onSubmit={executeLogin} noValidate style={styles.glassCard}>
           
-          {/* Título animado con brillo que cambia según el rol */}
           <div style={styles.title}>
-            <ShinyText
-              key={role} 
-              text={`Iniciar Sesión ${role}`}
+        
+            
               speed={2.5}
               delay={0}
               color="#94a3b8"       
@@ -242,7 +179,7 @@ export function Login() {
             />
           </div>
           
-          {/* Campo de texto: Correo Electrónico */}
+          {/* CONTENEDOR DE CORREO ELECTRÓNICO */}
           <div 
             style={{
               ...styles.inputContainer,
@@ -260,13 +197,12 @@ export function Login() {
               required
               style={styles.inputInner}
             />
-            {/* Mensaje de error de email si existe */}
             {errors.email && (
               <span style={styles.innerErrorText}>{errors.email}</span>
             )}
           </div>
 
-          {/* Campo de texto: Contraseña */}
+          {/* CONTENEDOR DE CONTRASEÑA */}
           <div 
             style={{
               ...styles.inputContainer,
@@ -285,13 +221,11 @@ export function Login() {
               required
               style={styles.inputInner}
             />
-            {/* Mensaje de error de contraseña si existe */}
             {errors.password && (
               <span style={styles.innerErrorText}>{errors.password}</span>
             )}
           </div>
 
-          {/* Texto de ayuda indicando las restricciones de la contraseña */}
           {!errors.password && (
             <div style={styles.helperContainer}>
               <small style={styles.helperText}>
@@ -300,7 +234,6 @@ export function Login() {
             </div>
           )}
 
-          {/* Botón personalizado de envío */}
           <div style={styles.buttonContainer}>
             <SpecularButton
               size="lg"
@@ -317,9 +250,8 @@ export function Login() {
         </form>
       </div>
 
-      {/* --- SELECTOR FLOTANTE PARA CAMBIAR DE ROL (ADMIN / EMPLEADO) --- */}
+      {/* --- SELECTOR VERTICAL DE ROL --- */}
       <div style={styles.roleSelectorContainer}>
-        {/* Fondo azul deslizante con animación suave */}
         <div 
           style={{
             ...styles.slidingBackground,
@@ -327,7 +259,7 @@ export function Login() {
           }}
         />
 
-        {/* Opción 1: Administrador */}
+        {/* Opción Administrador */}
         <div 
           style={{
             ...styles.roleOption,
@@ -351,7 +283,7 @@ export function Login() {
           }}>Administrador</span>
         </div>
 
-        {/* Opción 2: Empleado */}
+        {/* Opción Empleado */}
         <div 
           style={{
             ...styles.roleOption,
@@ -381,9 +313,6 @@ export function Login() {
   );
 }
 
-// =========================================================================
-// OBJETOS DE ESTILOS CSS EN JS
-// =========================================================================
 const styles = {
   appViewport: {
     width: '100vw',
@@ -397,25 +326,6 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     fontFamily: 'system-ui, -apple-system, sans-serif'
-  },
-  // Estilo del botón "Volver al Inicio" de la esquina superior izquierda
-  backButton: {
-    position: 'absolute' as 'absolute',
-    top: '30px',
-    left: '30px',
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    color: '#94a3b8',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '20px',
-    padding: '8px 16px',
-    fontSize: '0.85rem',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    zIndex: 50,
-    backdropFilter: 'blur(10px)',
-    transition: 'all 0.2s ease',
   },
   interfaceLayer: {
     position: 'relative' as 'relative',
@@ -497,7 +407,7 @@ const styles = {
     width: '100%'
   },
   
-  // Estilos del menú flotante selector de rol (Admin / Empleado)
+  // SELECTOR ROBUSTO
   roleSelectorContainer: {
     position: 'fixed' as 'fixed',
     bottom: '40px', 
@@ -525,7 +435,7 @@ const styles = {
     height: '44px', 
     borderRadius: '22px',
     backgroundColor: 'rgba(17, 34, 64, 0.65)', 
-    border: '1px solid #1d4ed8',                  
+    border: '1px solid #1d4ed8',             
     transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)', 
     pointerEvents: 'none' as 'none',
     zIndex: 1,
@@ -563,7 +473,7 @@ const styles = {
     transition: 'color 0.25s ease'
   },
 
-  // Estilos de la vista clara post-login
+  // --- ESTILOS DE LA PANTALLA EN DESARROLLO ---
   whiteViewport: {
     width: '100vw',
     height: '100vh',
@@ -635,4 +545,4 @@ const styles = {
   }
 };
 
-export default Login;
+export default Negocio;

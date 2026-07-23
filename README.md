@@ -78,3 +78,6 @@ Al terminar tu jornada, es importante liberar los puertos y la memoria de tu equ
 ```bash
 docker-compose stop
 ```
+
+----
+Comandos 
