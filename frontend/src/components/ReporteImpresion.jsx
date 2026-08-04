@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -35,26 +35,43 @@ const ReporteImpresion = ({ venta, detalles, onRegresar }) => {
   // ──────────────────────────────────────────────────────────
   // Auto-generar PDF al montar el componente
   // ──────────────────────────────────────────────────────────
+  const pdfGenerated = useRef(false);
+
   useEffect(() => {
-    generarPDF();
+    if (!pdfGenerated.current) {
+      handleDescargar();
+      pdfGenerated.current = true;
+    }
   }, []);
 
-  const generarPDF = () => {
+  const handleDescargar = () => {
+    const img = new Image();
+    img.src = '/Logos/martillo.png';
+    img.onload = () => generarPDF(img);
+    img.onerror = () => generarPDF(null);
+  };
+
+  const generarPDF = (logoImg) => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 14;
 
-    // ── Cabecera: Logo placeholder ──
-    // Dibuja un rectángulo como placeholder del logo
-    doc.setDrawColor(17, 24, 39);
-    doc.setLineWidth(0.5);
-    doc.rect(margin, 12, 38, 22);
-    doc.setFontSize(6.5);
-    doc.setTextColor(17, 24, 39);
-    doc.setFont('courier', 'bold');
-    doc.text('EL MARTILLO', margin + 19, 22, { align: 'center' });
-    doc.text('FERRETERÍA', margin + 19, 27, { align: 'center' });
+    // ── Cabecera: Logo ──
+    if (logoImg) {
+      // Dibujar el logo reescalado manteniendo proporciones
+      doc.addImage(logoImg, 'PNG', margin, 12, 30, 25, undefined, 'FAST');
+    } else {
+      // Placeholder en caso de error al cargar el logo
+      doc.setDrawColor(17, 24, 39);
+      doc.setLineWidth(0.5);
+      doc.rect(margin, 12, 38, 22);
+      doc.setFontSize(6.5);
+      doc.setTextColor(17, 24, 39);
+      doc.setFont('courier', 'bold');
+      doc.text('EL MARTILLO', margin + 19, 22, { align: 'center' });
+      doc.text('FERRETERÍA', margin + 19, 27, { align: 'center' });
+    }
 
     // ── Título del reporte ──
     doc.setFontSize(20);
@@ -100,11 +117,11 @@ const ReporteImpresion = ({ venta, detalles, onRegresar }) => {
         halign: 'center',
       },
       columnStyles: {
-        0: { cellWidth: 70 },
-        1: { halign: 'right', cellWidth: 30 },
-        2: { halign: 'center', cellWidth: 28 },
-        3: { halign: 'center', cellWidth: 22 },
-        4: { halign: 'right', cellWidth: 30 },
+        0: { halign: 'left' },
+        1: { halign: 'right' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'right' },
       },
       alternateRowStyles: { fillColor: [249, 250, 251] },
       margin: { left: margin, right: margin },
@@ -209,7 +226,7 @@ const ReporteImpresion = ({ venta, detalles, onRegresar }) => {
 
         {/* ── Botón Regresar ── */}
         <div style={styles.actions}>
-          <button style={styles.btnVolver} onClick={generarPDF}>
+          <button style={styles.btnVolver} onClick={handleDescargar}>
             ⬇ Descargar PDF de nuevo
           </button>
           <button style={styles.btnRegresar} onClick={onRegresar}>
