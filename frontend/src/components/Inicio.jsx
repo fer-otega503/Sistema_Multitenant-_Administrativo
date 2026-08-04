@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import DashboardCard from './DashboardCard';
+import { TokenService } from '../utils/token';
 
 /**
  * Vista de Inicio (Dashboard Principal)
  * Contiene un CSS Grid con 3 tarjetas proporcionales para Ventas del Día, Ventas del Mes e Inventario.
- * Los datos se pueden conectar directamente al backend.
+ * Los datos se consumen directamente desde el backend (/api/dashboard/metrics).
  */
 const Inicio = () => {
-  // Estado inicial listo para vincular datos desde el backend
   const [datosDashboard, setDatosDashboard] = useState({
     ventasDia: '$ 0000.0000',
     ventasMes: '$ 0000.0000',
@@ -15,17 +15,24 @@ const Inicio = () => {
   });
 
   useEffect(() => {
-    // Código sugerido para conectar con tu API backend:
-    // const fetchDatos = async () => {
-    //   try {
-    //     const res = await fetch('/api/dashboard/summary');
-    //     const data = await res.json();
-    //     setDatosDashboard(data);
-    //   } catch (error) {
-    //     console.error('Error obteniendo métricas del backend:', error);
-    //   }
-    // };
-    // fetchDatos();
+    const fetchDatos = async () => {
+      try {
+        const session  = TokenService.getUserSession();
+        const tenantId = session?.tenantId || 'ferreteria';
+        const res = await fetch('http://localhost:3000/api/dashboard/metrics', {
+          headers: { 'x-tenant-id': tenantId }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.exito && data.metricas) {
+            setDatosDashboard(data.metricas);
+          }
+        }
+      } catch (err) {
+        // Silencioso: usa datos de fallback
+      }
+    };
+    fetchDatos();
   }, []);
 
   return (

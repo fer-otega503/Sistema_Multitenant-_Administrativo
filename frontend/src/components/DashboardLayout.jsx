@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Header from './Header';
 import Inicio from './Inicio';
+import Ventas from './Ventas';
 
 /**
  * Layout Principal (DashboardLayout)
@@ -12,9 +13,22 @@ const DashboardLayout = ({
   children, 
   nombreNegocio = 'Name...', 
   usuario = 'Example Gerente', 
-  rol = 'ADMINISTRADOR / EJECUTIVO' 
+  rol = 'ADMINISTRADOR / EJECUTIVO',
+  activeSection,   // sección activa controlada externamente (opcional)
+  onNavigate,      // callback cuando se cambia de sección (opcional)
 }) => {
   const [activeItem, setActiveItem] = useState('Inicio');
+
+  // Si el padre controla la navegación, usamos su valor; si no, el estado interno
+  const currentSection = activeSection ?? activeItem;
+
+  const handleMenuClick = (id) => {
+    if (onNavigate) {
+      onNavigate(id);
+    } else {
+      setActiveItem(id);
+    }
+  };
 
   const menuItems = [
     {
@@ -87,8 +101,8 @@ const DashboardLayout = ({
             <MenuItem 
               key={item.id}
               item={item}
-              isActive={activeItem === item.id}
-              onClick={() => setActiveItem(item.id)}
+              isActive={currentSection === item.id}
+              onClick={() => handleMenuClick(item.id)}
             />
           ))}
         </nav>
@@ -103,7 +117,14 @@ const DashboardLayout = ({
         />
 
         <main style={styles.mainBody}>
-          {children || <Inicio />}
+          {/* Si el padre pasa children, los mostramos (compatibilidad) */}
+          {/* Si no, renderizamos la sección activa */}
+          {children
+            ? children
+            : currentSection === 'Ventas'
+              ? <Ventas />
+              : <Inicio />
+          }
         </main>
       </div>
     </div>

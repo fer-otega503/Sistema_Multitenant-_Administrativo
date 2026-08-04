@@ -21,6 +21,7 @@ const DashboardInicio = ({ onLogout }) => {
   const [userRole, setUserRole] = useState('ADMINISTRADOR / EJECUTIVO');
   const [businessName, setBusinessName] = useState('Name...');
   const [isAdmin, setIsAdmin] = useState(true);
+  const [activeSection, setActiveSection] = useState('Inicio');
 
   const [metricas, setMetricas] = useState({
     ventasDia: '$ 0000.0000',
@@ -126,27 +127,9 @@ const DashboardInicio = ({ onLogout }) => {
       nombreNegocio={businessName} 
       usuario={userName} 
       rol={userRole}
-    >
-      <div style={styles.contentPadding}>
-        <div style={styles.gridContainer}>
-          <DashboardCard 
-            titulo="Ventas del Dia" 
-            valor={metricas.ventasDia} 
-            unidad="MX" 
-          />
-          <DashboardCard 
-            titulo="Ventas del Mes" 
-            valor={metricas.ventasMes} 
-            unidad="MX" 
-          />
-          <DashboardCard 
-            titulo="Inventario" 
-            valor={metricas.inventario} 
-            unidad="Stock" 
-          />
-        </div>
-      </div>
-    </DashboardLayout>
+      activeSection={activeSection}
+      onNavigate={setActiveSection}
+    />
   );
 };
 
