@@ -10,14 +10,8 @@ const pool = require('../db');
  */
 const tenantMiddleware = async (req, res, next) => {
   try {
-    // Obtener tenant_id del token (si ya está autenticado), del body o encabezado
-    const tenantId = req.usuario?.tenant_id || req.body?.tenant_id || req.headers['x-tenant-id'];
-
-    if (!tenantId) {
-      return res.status(400).json({
-        error: 'Identificador de inquilino (tenant_id) no proporcionado.'
-      });
-    }
+    // Obtener tenant_id del token, body, encabezados x-tenant-id / tenant, o usar 'ferreteria' por defecto
+    const tenantId = req.usuario?.tenant_id || req.body?.tenant_id || req.body?.tenant || req.headers['x-tenant-id'] || 'ferreteria';
 
     // 🛡️ Sanitización y validación estricta para evitar SQL Injection en nombres de esquemas
     const isValidSchema = /^[a-zA-Z0-9_]+$/.test(tenantId);

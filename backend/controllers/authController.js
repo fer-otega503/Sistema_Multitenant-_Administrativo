@@ -14,7 +14,7 @@ const registrarUsuario = async (req, res) => {
     });
   }
 
-  const rolesPermitidos = ['Admin', 'Empleado'];
+  const rolesPermitidos = ['Admin', 'Empleado', 'Gestor', 'Administrador'];
   if (!rolesPermitidos.includes(rol)) {
     return res.status(400).json({
       error: `Rol inválido. Debe ser uno de los siguientes: ${rolesPermitidos.join(', ')}`

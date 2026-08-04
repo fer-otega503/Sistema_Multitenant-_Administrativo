@@ -1,45 +1,48 @@
-const pool = require('./db-mysql');
+const pool = require('./db');
 const bcrypt = require('bcryptjs');
 
 /**
  * Crea de forma dinámica la base de datos/esquema y sus respectivas tablas para un inquilino (tenant).
- * Además, inserta el primer usuario administrador recibido desde el controlador.
+ * Además, inserta el primer usuario administrador recibido desde el controlador y opcionalmente datos de prueba.
  * 
- * @param {string} nombre_negocio Nombre de la base de datos/esquema a crear.
- * @param {object} adminData Datos del administrador (nombre, usuario, psw).
+ * @param {string} nombre_negocio Nombre del esquema a crear.
+ * @param {object} adminData Datos del administrador (nombre, email, password).
  */
 const createTenantSchema = async (nombre_negocio, adminData) => {
-    // 🛡️ Sanitización y validación estricta del nombre del esquema para evitar inyección SQL
-    const isValidSchema = /^[a-zA-Z0-9_]+$/.test(nombre_negocio);
-    if (!isValidSchema) {
-        throw new Error('El nombre del negocio (esquema) es inválido o contiene caracteres no permitidos.');
-    }
+  // 🛡️ Sanitización y validación estricta del nombre del esquema para evitar inyección SQL
+  const isValidSchema = /^[a-zA-Z0-9_]+$/.test(nombre_negocio);
+  if (!isValidSchema) {
+    throw new Error('El nombre del negocio (esquema) es inválido o contiene caracteres no permitidos.');
+  }
 
-    let connection;
-    try {
-        connection = await pool.getConnection();
+  let client;
+  try {
+    client = await pool.connect();
 
-        // 1. Crear el esquema/base de datos
-        console.log(`[Database Init] Creando esquema para el negocio: ${ferreteria}...`);
-        await connection.query(`CREATE SCHEMA IF NOT EXISTS \`${ferreteria}\`;`);
+    // 1. Crear el esquema de forma aislada
+    console.log(`[Database Init] Creando esquema para el negocio: ${nombre_negocio}...`);
+    await client.query(`CREATE SCHEMA IF NOT EXISTS "${nombre_negocio}";`);
 
-        // 2. Creación de la tabla users (id, nombre, usuario, psw, rol)
-        console.log(`[Database Init] Creando tabla users...`);
-        await connection.query(`
-      CREATE TABLE IF NOT EXISTS \`${ferreteria}\`.users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+    // Hacemos que por defecto todas las operaciones de esta conexión vayan al esquema creado
+    await client.query(`SET search_path TO "${nombre_negocio}";`);
+
+    // 2. Creación de la tabla users
+    console.log(`[Database Init] Creando tabla users...`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
         nombre VARCHAR(100) NOT NULL,
-        usuario VARCHAR(100) UNIQUE NOT NULL,
-        psw VARCHAR(255) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
         rol VARCHAR(50) NOT NULL
       );
     `);
 
-        // 3. Creación de la tabla products (id, codigo, nombre, descripcion, costo, precio_venta, unidad, stock DECIMAL)
-        console.log(`[Database Init] Creando tabla products...`);
-        await connection.query(`
-      CREATE TABLE IF NOT EXISTS \`${ferreteria}\`.products (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+    // 3. Creación de la tabla products
+    console.log(`[Database Init] Creando tabla products...`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
         codigo VARCHAR(50) UNIQUE,
         nombre VARCHAR(100) NOT NULL,
         descripcion TEXT,
@@ -50,94 +53,109 @@ const createTenantSchema = async (nombre_negocio, adminData) => {
       );
     `);
 
-        // 4. Creación de la tabla sells (id, no_caja, total, fecha TIMESTAMP)
-        console.log(`[Database Init] Creando tabla sells...`);
-        await connection.query(`
-      CREATE TABLE IF NOT EXISTS \`${ferreteria}\`.sells (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+    // 4. Creación de la tabla sells
+    console.log(`[Database Init] Creando tabla sells...`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sells (
+        id SERIAL PRIMARY KEY,
         no_caja VARCHAR(20) NOT NULL,
         total DECIMAL(10, 2) NOT NULL,
         fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-        // 5. Creación de la tabla sell_details (id, sell_id, product_id, cantidad, precio_unitario)
-        console.log(`[Database Init] Creando tabla sell_details...`);
-        await connection.query(`
-      CREATE TABLE IF NOT EXISTS \`${ferreteria}\`.sell_details (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+    // 5. Creación de la tabla sell_details
+    console.log(`[Database Init] Creando tabla sell_details...`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sell_details (
+        id SERIAL PRIMARY KEY,
         sell_id INT NOT NULL,
         product_id INT NOT NULL,
         cantidad DECIMAL(10, 2) NOT NULL,
         precio_unitario DECIMAL(10, 2) NOT NULL,
-        FOREIGN KEY (sell_id) REFERENCES \`${ferreteria}\`.sells(id) ON DELETE CASCADE,
-        FOREIGN KEY (product_id) REFERENCES \`${ferreteria}\`.products(id)
+        FOREIGN KEY (sell_id) REFERENCES sells(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id)
       );
     `);
 
-        // 6. Seeder: Insertar usuario administrador
-        if (adminData) {
-            console.log(`[Database Init] Insertando administrador inicial: ${adminData.usuario}...`);
-            const { nombre, usuario, psw } = adminData;
+    // 6. Seeder: Insertar usuario administrador
+    if (adminData) {
+      console.log(`[Database Init] Insertando administrador inicial: ${adminData.email}...`);
+      const { nombre, email, password } = adminData;
 
-            // Hasheamos la contraseña por seguridad
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(psw, salt);
+      // Hasheamos la contraseña por seguridad
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-            await connection.query(`
-        INSERT INTO \`${ferreteria}\`.users (nombre, usuario, psw, rol)
-        VALUES (?, ?, ?, 'Administrador')
-        ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), psw = VALUES(psw);
-      `, [nombre, usuario, hashedPassword]);
-        }
-
-        console.log(`[Database Init] ¡Éxito! Esquema '${ferreteria}' inicializado correctamente.`);
-        return { success: true };
-    } catch (error) {
-        console.error(`[Database Init] Error al inicializar el esquema para '${ferreteria}':`, error);
-        throw error;
-    } finally {
-        if (connection) {
-            connection.release();
-        }
+      await client.query(`
+        INSERT INTO users (nombre, email, password, rol)
+        VALUES ($1, $2, $3, 'Administrador')
+        ON CONFLICT (email) DO UPDATE 
+        SET nombre = EXCLUDED.nombre, password = EXCLUDED.password;
+      `, [nombre, email, hashedPassword]);
     }
+
+    // 7. Cargar datos iniciales de prueba de ferretería
+    await seedDatosIniciales(client);
+
+    console.log(`[Database Init] ¡Éxito! Esquema '${nombre_negocio}' inicializado correctamente.`);
+    return { success: true };
+  } catch (error) {
+    console.error(`[Database Init] Error al inicializar el esquema para '${nombre_negocio}':`, error);
+    throw error;
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
+};
+
+/**
+ * Función auxiliar asíncrona para sembrar datos iniciales de ferretería en un esquema.
+ */
+const seedDatosIniciales = async (client) => {
+  try {
+    // 1. Productos iniciales
+    await client.query(`
+      INSERT INTO products (codigo, nombre, descripcion, costo, precio_venta, unidad, stock) VALUES
+      ('FER-001', 'Martillo de uña', 'Martillo Truper de 16 oz con mango de madera', 85.00, 150.00, 'PZ', 25.00),
+      ('FER-002', 'Clavo estándar 2"', 'Clavos para madera, venta por kilo', 30.00, 55.00, 'KG', 50.00),
+      ('FER-003', 'Cemento Cruz Azul', 'Bulto de cemento gris 50kg', 180.00, 220.00, 'PZ', 100.00),
+      ('FER-004', 'Cable de cobre cal. 12', 'Rollo de cable THW 100m color rojo', 600.00, 950.00, 'PZ', 10.00),
+      ('FER-005', 'Tornillo pija 1"', 'Tornillo pija cabeza plana', 0.50, 1.50, 'PZ', 500.00)
+      ON CONFLICT (codigo) DO NOTHING;
+    `);
+
+    // 2. Ventas simuladas iniciales (No insertamos ID manual para evitar conflictos con el serial)
+    // Pero como dependemos del ID en sell_details, podemos usar un workaround:
+    await client.query(`
+      INSERT INTO sells (id, no_caja, total) VALUES
+      (1, 'CAJA-01', 370.00),
+      (2, 'CAJA-02', 1170.00)
+      ON CONFLICT DO NOTHING;
+    `);
+    
+    // Ajustar secuencia para evitar errores si se insertan ids a mano
+    await client.query("SELECT setval(pg_get_serial_sequence('sells', 'id'), coalesce(max(id), 1), max(id) IS NOT null) FROM sells;");
+    await client.query("SELECT setval(pg_get_serial_sequence('products', 'id'), coalesce(max(id), 1), max(id) IS NOT null) FROM products;");
+
+    // 3. Detalles de ventas
+    await client.query(`
+      INSERT INTO sell_details (sell_id, product_id, cantidad, precio_unitario) VALUES
+      (1, 1, 1.00, 150.00),
+      (1, 2, 4.00, 55.00),
+      (2, 3, 1.00, 220.00),
+      (2, 4, 1.00, 950.00)
+      ON CONFLICT DO NOTHING;
+    `);
+
+    console.log(`[Database Init] ✅ Datos iniciales de ferretería cargados con éxito.`);
+  } catch (err) {
+    console.warn(`[Database Init] Aviso: No se pudieron cargar los datos de prueba iniciales:`, err.message);
+  }
 };
 
 module.exports = {
-    createTenantSchema
+  createTenantSchema,
+  seedDatosIniciales
 };
-
-// Asegúrate de cambiar `schemaName` por el valor real si no lo estás usando como variable dinámica (ej. 'ferreteria')
-
-const ferreteriaSeederQuery = `
-    -- 1. Insertar Productos de Ferretería
-    -- Orden: codigo, nombre, descripcion, costo, precio_venta, unidad, stock
-    INSERT INTO ${ferreteria}.products (codigo, nombre, descripcion, costo, precio_venta, unidad, stock) VALUES
-    ('FER-001', 'Martillo de uña', 'Martillo Truper de 16 oz con mango de madera', 85.00, 150.00, 'PZ', 25.00),
-    ('FER-002', 'Clavo estándar 2"', 'Clavos para madera, venta por kilo', 30.00, 55.00, 'KG', 50.00),
-    ('FER-003', 'Cemento Cruz Azul', 'Bulto de cemento gris 50kg', 180.00, 220.00, 'PZ', 100.00),
-    ('FER-004', 'Cable de cobre cal. 12', 'Rollo de cable THW 100m color rojo', 600.00, 950.00, 'PZ', 10.00),
-    ('FER-005', 'Tornillo pija 1"', 'Tornillo pija cabeza plana', 0.50, 1.50, 'PZ', 500.00);
-
-    -- 2. Insertar Ventas Simuladas
-    -- Orden: no_caja, total
-    INSERT INTO ${ferreteria}.sells (no_caja, total) VALUES
-    ('CAJA-01', 370.00), -- Venta 1
-    ('CAJA-02', 1170.00); -- Venta 2
-
-    -- 3. Insertar Detalles de esas Ventas (Tabla pivote)
-    -- Asumiendo que los IDs generados arriba son 1 al 5 para productos, y 1 y 2 para ventas
-    -- Orden: sell_id, product_id, cantidad, precio_unitario
-    INSERT INTO ${ferreteria}.sell_details (sell_id, product_id, cantidad, precio_unitario) VALUES
-    -- Detalles del Ticket 1 (1 Martillo y 4 KG de clavos)
-    (1, 1, 1.00, 150.00),
-    (1, 2, 4.00, 55.00),
-    
-    -- Detalles del Ticket 2 (1 Cemento y 1 Rollo de Cable)
-    (2, 3, 1.00, 220.00),
-    (2, 4, 1.00, 950.00);
-`;
-
-// Ejecutar el seeder en MySQL
-await pool.query(ferreteriaSeederQuery);
-console.log('✅ Datos de ferretería cargados con éxito.');

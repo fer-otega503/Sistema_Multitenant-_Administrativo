@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-ro
 import { AnimatePresence, motion } from "framer-motion"; // Animaciones de entrada y salida
 import { Welcome } from "./components/Welcome";
 import Login from "./components/Login";
+import DashboardInicio from "./components/DashboardInicio";
 
 // Componente auxiliar para conectar el botón de inicio con React Router
 function WelcomePage() {
@@ -50,6 +51,24 @@ function AnimatedRoutes() {
           element={
             <PageWrapper>
               <Login />
+            </PageWrapper>
+          } 
+        />
+
+        {/* Ruta de Dashboard / Inicio */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <PageWrapper>
+              <DashboardInicio />
+            </PageWrapper>
+          } 
+        />
+        <Route 
+          path="/inicio" 
+          element={
+            <PageWrapper>
+              <DashboardInicio />
             </PageWrapper>
           } 
         />

@@ -4,6 +4,7 @@ import ShinyText from './ShinyText';
 import { LightRays } from './LightRays'; 
 import SpecularButton from './SpecularButton'; 
 import PillNav from './PillNav/PillNav';
+import DashboardInicio from './DashboardInicio';
 
 // Traemos las funciones que validan que el correo y contraseña cumplan las reglas de seguridad
 import { containsEmojis, validateLoginPassword, validateEmail } from '../validation/security';
@@ -148,11 +149,15 @@ export function Login() {
   // 1. VISTA: SECCIÓN POST-LOGIN (Lo que se ve después de iniciar sesión)
   // =========================================================================
   if (isSubmitted) {
-    const SafePillNav = PillNav as any;
+    // PANTALLA EXCLUSIVA PARA EL ADMINISTRADOR
+    if (role === 'Administrador' || userData?.role === 'Administrador') {
+      return <DashboardInicio onLogout={handleLogout} />;
+    }
 
+    // VISTA RESTRINGIDA / EMPLEADO
+    const SafePillNav = PillNav as any;
     return (
       <main style={styles.whiteViewport}>
-        {/* Barra de navegación superior con diseño estilo píldora */}
         <header style={styles.navHeader}>
           <SafePillNav
             logo={logoUrl}
@@ -174,33 +179,15 @@ export function Login() {
           />
         </header>
 
-        {/* Mensaje de bienvenida tras autenticarse */}
         <div style={styles.whiteContent}>
-          <h1 style={styles.whiteTitle}>Sección en desarrollo</h1>
+          <h1 style={styles.whiteTitle}>Vista de Empleado</h1>
           <p style={styles.whiteSubtitle}>
-            Has iniciado sesión correctamente como <strong>{userData?.role || role}</strong>.
+            Has iniciado sesión como <strong>{userData?.role || role}</strong>.
+          </p>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', maxWidth: '400px', margin: '0 auto 1.5rem auto' }}>
+            El Dashboard principal de Métricas e Inventario está restringido únicamente al Administrador.
           </p>
           
-          {/* Muestra la empresa/tenant detectada por el servidor */}
-          {userData?.companyName && (
-            <div style={styles.tenantBadge}>
-              <span>Empresa: <strong>{userData.companyName}</strong></span>
-              <small style={{ display: 'block', color: '#64748b' }}>ID Tenant: {userData.tenantId}</small>
-            </div>
-          )}
-
-          {/* Muestra el estado del servicio de analítica (Python -> Node) */}
-          {analyticsStatus && (
-            <div style={{...styles.tenantBadge, borderColor: '#10b981'}}>
-              <span style={{ color: '#047857' }}>Integración Python Activa ✅</span>
-              <small style={{ display: 'block', color: '#64748b', marginTop: '4px' }}>
-                Mensaje: {analyticsStatus.message} <br/>
-                Servicio: {analyticsStatus.service}
-              </small>
-            </div>
-          )}
-
-          {/* Botón para salir y regresar al login */}
           <button 
             style={styles.whiteButton} 
             onClick={handleLogout}
@@ -304,7 +291,7 @@ export function Login() {
               value={credentials.password}
               onChange={handleInputChange}
               disabled={isLoading}
-              maxLength={12}
+              maxLength={30}
               required
               style={styles.inputInner}
             />
@@ -318,7 +305,7 @@ export function Login() {
           {!errors.password && (
             <div style={styles.helperContainer}>
               <small style={styles.helperText}>
-                Debe tener exactamente 12 caracteres (Letras, números o símbolos). No se admiten emojis.
+                Entre 8 y 30 caracteres (letras, números o símbolos). No se admiten emojis.
               </small>
             </div>
           )}

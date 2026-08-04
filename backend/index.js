@@ -3,6 +3,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes'); // 🔌 Importamos el paquete de rutas de seguridad que creamos por separado
 const analyticsRoutes = require('./routes/analyticsRoutes'); // 🔌 Importamos el puente hacia el servicio Python
 const tenantRoutes = require('./routes/tenantRoutes'); // 🔌 Importamos las rutas de inquilinos
+const dashboardRoutes = require('./routes/dashboardRoutes'); // 🔌 Importamos las rutas del dashboard
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(express.json()); // Hace que nuestro servidor entienda datos en formato 
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes); // Montamos las rutas analíticas
 app.use('/api/tenants', tenantRoutes); // Montamos las rutas de registro de negocios
+app.use('/api/dashboard', dashboardRoutes); // Montamos las rutas del dashboard de métricas
 
 // ------------------------------------------
 // 🔍 ENDPOINTS DE PRUEBA (Los de control inicial)

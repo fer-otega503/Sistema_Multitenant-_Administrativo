@@ -70,8 +70,8 @@ export const validateEmail = (email: string): ValidationResult => {
  * Realiza todas las comprobaciones de seguridad para la contraseña del login.
  */
 export const validateLoginPassword = (password: string): ValidationResult => {
-  if (password.length !== 12) {
-    return { isValid: false, message: "La contraseña debe tener exactamente 12 caracteres." };
+  if (password.length < 8 || password.length > 30) {
+    return { isValid: false, message: "La contraseña debe tener entre 8 y 30 caracteres." };
   }
 
   if (containsEmojis(password)) {
