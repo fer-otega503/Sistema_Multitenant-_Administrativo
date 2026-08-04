@@ -62,15 +62,15 @@ const DashboardLayout = ({
             alt="El Martillo Ferretería" 
             style={styles.logoImage}
             onError={(e) => {
-              // Fallback gráfico elegante en caso de que martillo.png aún no esté subido en la carpeta Logos
               e.target.style.display = 'none';
               if (e.target.nextSibling) {
                 e.target.nextSibling.style.display = 'flex';
               }
             }}
           />
+          {/* Fallback: solo se muestra si martillo.png no carga */}
           <div style={styles.logoFallback}>
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2">
               <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
             </svg>
             <span style={styles.logoFallbackText}>EL MARTILLO</span>
@@ -178,17 +178,22 @@ const styles = {
   },
   logoContainer: {
     backgroundColor: '#FFFFFF',
-    padding: '16px',
+    padding: '12px 16px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: '140px',
-    borderBottom: '1px solid rgba(0,0,0,0.05)'
+    minHeight: '130px',
+    maxHeight: '160px',
+    borderBottom: '1px solid rgba(0,0,0,0.06)',
+    overflow: 'hidden'
   },
   logoImage: {
-    maxWidth: '100%',
-    maxHeight: '120px',
-    objectFit: 'contain'
+    width: '100%',
+    maxWidth: '220px',
+    height: '120px',
+    objectFit: 'contain',
+    objectPosition: 'center',
+    display: 'block'
   },
   logoFallback: {
     display: 'none',
