@@ -26,10 +26,10 @@ const pool = new Pool({
 
 const SCHEMA_NAME = 'ferreteria';
 
-const ADMIN_EMAIL    = 'admin1234@gmail.com';
+const ADMIN_EMAIL = 'admin1234@gmail.com';
 const ADMIN_PASSWORD = 'admins123456789';
-const ADMIN_NOMBRE   = 'Admin Ferretería';
-const ADMIN_ROL      = 'Gestor';
+const ADMIN_NOMBRE = 'Admin Ferretería';
+const ADMIN_ROL = 'Gestor';
 
 async function seedFerreteria() {
   let client;
@@ -113,7 +113,7 @@ async function seedFerreteria() {
     // 6. Insertar usuario Gestor de ejemplo
     // ─────────────────────────────────────────────
     console.log(`\n👤 Insertando usuario Gestor: ${ADMIN_EMAIL}...`);
-    const salt           = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
     await client.query(`
@@ -134,13 +134,13 @@ async function seedFerreteria() {
       INSERT INTO "${SCHEMA_NAME}".products
         (codigo, nombre, descripcion, costo, precio_venta, unidad, stock)
       VALUES
-        ('FER-001', 'Martillo de uña',       'Martillo Truper de 16 oz con mango de madera',      85.00,  150.00, 'PZ',   25.00),
-        ('FER-002', 'Clavo estándar 2"',     'Clavos para madera, venta por kilo',                30.00,   55.00, 'KG',   50.00),
-        ('FER-003', 'Cemento Cruz Azul',      'Bulto de cemento gris 50kg',                       180.00,  220.00, 'PZ',  100.00),
-        ('FER-004', 'Cable de cobre cal. 12', 'Rollo de cable THW 100m color rojo',               600.00,  950.00, 'PZ',   10.00),
-        ('FER-005', 'Tornillo pija 1"',       'Tornillo pija cabeza plana',                         0.50,    1.50, 'PZ',  500.00),
-        ('FER-006', 'Lija de agua #220',      'Hoja de lija de agua grano 220',                    5.00,   12.00, 'PZ',  200.00),
-        ('FER-007', 'Pintura vinílica blanca','Cubeta 20L pintura vinílica interior/exterior',    320.00,  480.00, 'PZ',   15.00),
+        ('2026001', 'Martillo de uña',       'Martillo Truper de 16 oz con mango de madera',      85.00,  150.00, 'PZ',   25.00),
+        ('2026002', 'Clavo estándar 2"',     'Clavos para madera, venta por kilo',                30.00,   55.00, 'KG',   50.00),
+        ('2026003', 'Cemento Cruz Azul',      'Bulto de cemento gris 50kg',                       180.00,  220.00, 'PZ',  100.00),
+        ('2026004', 'Cable de cobre cal. 12', 'Rollo de cable THW 100m color rojo',               600.00,  950.00, 'PZ',   10.00),
+        ('2026005', 'Tornillo pija 1"',       'Tornillo pija cabeza plana',                         0.50,    1.50, 'PZ',  500.00),
+        ('2026006', 'Lija de agua #220',      'Hoja de lija de agua grano 220',                    5.00,   12.00, 'PZ',  200.00),
+        ('2026007', 'Pintura vinílica blanca','Cubeta 20L pintura vinílica interior/exterior',    320.00,  480.00, 'PZ',   15.00),
         ('FER-008', 'Flexómetro 5m',          'Cinta métrica de 5 metros con cuerpo antidesliz',   45.00,   85.00, 'PZ',   30.00)
       ON CONFLICT (codigo) DO NOTHING;
     `);
@@ -199,10 +199,10 @@ async function seedFerreteria() {
     // ─────────────────────────────────────────────
     // 10. Resumen final
     // ─────────────────────────────────────────────
-    const resUsers    = await client.query(`SELECT COUNT(*) FROM "${SCHEMA_NAME}".users;`);
-    const resProds    = await client.query(`SELECT COUNT(*) FROM "${SCHEMA_NAME}".products;`);
-    const resSells    = await client.query(`SELECT COUNT(*) FROM "${SCHEMA_NAME}".sells;`);
-    const resDetails  = await client.query(`SELECT COUNT(*) FROM "${SCHEMA_NAME}".sell_details;`);
+    const resUsers = await client.query(`SELECT COUNT(*) FROM "${SCHEMA_NAME}".users;`);
+    const resProds = await client.query(`SELECT COUNT(*) FROM "${SCHEMA_NAME}".products;`);
+    const resSells = await client.query(`SELECT COUNT(*) FROM "${SCHEMA_NAME}".sells;`);
+    const resDetails = await client.query(`SELECT COUNT(*) FROM "${SCHEMA_NAME}".sell_details;`);
 
     console.log('\n═══════════════════════════════════════════════════');
     console.log('✅  RESUMEN DEL ESQUEMA "ferreteria"');

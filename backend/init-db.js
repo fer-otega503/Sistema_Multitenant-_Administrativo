@@ -118,11 +118,11 @@ const seedDatosIniciales = async (client) => {
     // 1. Productos iniciales
     await client.query(`
       INSERT INTO products (codigo, nombre, descripcion, costo, precio_venta, unidad, stock) VALUES
-      ('FER-001', 'Martillo de uña', 'Martillo Truper de 16 oz con mango de madera', 85.00, 150.00, 'PZ', 25.00),
-      ('FER-002', 'Clavo estándar 2"', 'Clavos para madera, venta por kilo', 30.00, 55.00, 'KG', 50.00),
-      ('FER-003', 'Cemento Cruz Azul', 'Bulto de cemento gris 50kg', 180.00, 220.00, 'PZ', 100.00),
-      ('FER-004', 'Cable de cobre cal. 12', 'Rollo de cable THW 100m color rojo', 600.00, 950.00, 'PZ', 10.00),
-      ('FER-005', 'Tornillo pija 1"', 'Tornillo pija cabeza plana', 0.50, 1.50, 'PZ', 500.00)
+      ('2026001', 'Martillo de uña', 'Martillo Truper de 16 oz con mango de madera', 85.00, 150.00, 'PZ', 25.00),
+      ('2026002', 'Clavo estándar 2"', 'Clavos para madera, venta por kilo', 30.00, 55.00, 'KG', 50.00),
+      ('2026003', 'Cemento Cruz Azul', 'Bulto de cemento gris 50kg', 180.00, 220.00, 'PZ', 100.00),
+      ('2026004', 'Cable de cobre cal. 12', 'Rollo de cable THW 100m color rojo', 600.00, 950.00, 'PZ', 10.00),
+      ('2026005', 'Tornillo pija 1"', 'Tornillo pija cabeza plana', 0.50, 1.50, 'PZ', 500.00)
       ON CONFLICT (codigo) DO NOTHING;
     `);
 
@@ -134,7 +134,7 @@ const seedDatosIniciales = async (client) => {
       (2, 'CAJA-02', 1170.00)
       ON CONFLICT DO NOTHING;
     `);
-    
+
     // Ajustar secuencia para evitar errores si se insertan ids a mano
     await client.query("SELECT setval(pg_get_serial_sequence('sells', 'id'), coalesce(max(id), 1), max(id) IS NOT null) FROM sells;");
     await client.query("SELECT setval(pg_get_serial_sequence('products', 'id'), coalesce(max(id), 1), max(id) IS NOT null) FROM products;");
