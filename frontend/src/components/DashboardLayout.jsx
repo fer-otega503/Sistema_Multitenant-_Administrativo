@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from './Header';
 import Inicio from './Inicio';
 import Ventas from './Ventas';
+import Inventario from './Inventario';
 
 /**
  * Layout Principal (DashboardLayout)
@@ -123,7 +124,9 @@ const DashboardLayout = ({
             ? children
             : currentSection === 'Ventas'
               ? <Ventas />
-              : <Inicio />
+              : currentSection === 'Inventario'
+                ? <Inventario />
+                : <Inicio />
           }
         </main>
       </div>
