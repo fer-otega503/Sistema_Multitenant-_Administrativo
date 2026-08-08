@@ -1,26 +1,19 @@
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion"; // Animaciones de entrada y salida
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { Welcome } from "./components/Welcome";
 import Login from "./components/Login";
 import DashboardInicio from "./components/DashboardInicio";
+import EmpleadoDashboard from "./components/EmpleadoDashboard";
+import ProtectedRoute from "./router/ProtectedRoute";
 
-// Componente auxiliar para conectar el botón de inicio con React Router
-function WelcomePage() {
-  const navigate = useNavigate();
-  return <Welcome onStartLogin={() => navigate("/login")} />;
-}
-
-// Envoltorio reutilizable para animar el cambio entre páginas
-function PageWrapper({ children }) {
+// ── Animación solo para Welcome y Login (pantallas de entrada) ────────────────
+function AuthPageWrapper({ children }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.98, y: 10 }}  // Estado inicial antes de aparecer
-      animate={{ opacity: 1, scale: 1, y: 0 }}      // Estado cuando ya es visible
-      exit={{ opacity: 0, scale: 0.98, y: -10 }}    // Estado al desaparecer
-      transition={{ 
-        duration: 0.35, 
-        ease: [0.22, 1, 0.36, 1] // Transición suave estilo iOS
-      }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
       style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}
     >
       {children}
@@ -28,50 +21,105 @@ function PageWrapper({ children }) {
   );
 }
 
-// Maneja las rutas con animación activada
-function AnimatedRoutes() {
+// ── Las rutas de dashboard NO tienen animación de página completa ─────────────
+// El cambio entre secciones se siente instantáneo porque solo
+// cambia el contenido interno del layout, no desmonta todo el árbol.
+
+// ── Página de Bienvenida ──────────────────────────────────────────────────────
+function WelcomePage() {
+  const navigate = useNavigate();
+  return <Welcome onStartLogin={() => navigate("/login")} />;
+}
+
+// ── Dashboard Admin (lee sección de URL) ─────────────────────────────────────
+function AdminDashboardPage() {
+  const { section } = useParams();
+  const sectionMap = {
+    dashboard: 'Inicio',
+    sells:     'Ventas',
+    inventory: 'Inventario',
+    employers: 'Empleados',
+  };
+  const activeSection = sectionMap[section] ?? 'Inicio';
+  return <DashboardInicio activeSection={activeSection} />;
+}
+
+// ── Dashboard Empleado (lee sección de URL) ───────────────────────────────────
+function EmployeeDashboardPage() {
+  const { section } = useParams();
+  const sectionMap = {
+    dashboard: 'Inicio',
+    sells:     'Ventas',
+    inventory: 'Inventario',
+  };
+  const activeSection = sectionMap[section] ?? 'Inicio';
+  return <EmpleadoDashboard activeSection={activeSection} />;
+}
+
+// ── Árbol de rutas ────────────────────────────────────────────────────────────
+function AppRoutes() {
   const location = useLocation();
 
   return (
+    // AnimatePresence solo activo en rutas de auth (Welcome / Login)
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        {/* Ruta de bienvenida */}
-        <Route 
-          path="/" 
-          element={
-            <PageWrapper>
-              <WelcomePage />
-            </PageWrapper>
-          } 
+      <Routes location={location} key={location.key}>
+
+        {/* ── Rutas públicas con animación suave ──────────────────────────── */}
+        <Route
+          path="/"
+          element={<AuthPageWrapper><WelcomePage /></AuthPageWrapper>}
+        />
+        <Route
+          path="/login"
+          element={<AuthPageWrapper><Login /></AuthPageWrapper>}
         />
 
-        {/* Ruta de Login */}
-        <Route 
-          path="/login" 
+        {/* ── Rutas de Administrador (sin PageWrapper — instantáneas) ─────── */}
+        <Route
+          path="/:tenant/admin/:section"
           element={
-            <PageWrapper>
-              <Login />
-            </PageWrapper>
-          } 
+            <ProtectedRoute requiredType="admin">
+              <div style={{ width: '100vw', height: '100vh', overflow: 'auto' }}>
+                <AdminDashboardPage />
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        {/* Redirect a dashboard cuando se visita /:tenant/admin */}
+        <Route
+          path="/:tenant/admin"
+          element={
+            <ProtectedRoute requiredType="admin">
+              <Navigate to="dashboard" replace />
+            </ProtectedRoute>
+          }
         />
 
-        {/* Ruta de Dashboard / Inicio */}
-        <Route 
-          path="/dashboard" 
+        {/* ── Rutas de Empleado (sin PageWrapper — instantáneas) ───────────── */}
+        <Route
+          path="/:tenant/employee-:empId/:section"
           element={
-            <PageWrapper>
-              <DashboardInicio />
-            </PageWrapper>
-          } 
+            <ProtectedRoute requiredType="employee">
+              <div style={{ width: '100vw', height: '100vh', overflow: 'auto' }}>
+                <EmployeeDashboardPage />
+              </div>
+            </ProtectedRoute>
+          }
         />
-        <Route 
-          path="/inicio" 
+        {/* Redirect a dashboard cuando se visita /:tenant/employee-:empId */}
+        <Route
+          path="/:tenant/employee-:empId"
           element={
-            <PageWrapper>
-              <DashboardInicio />
-            </PageWrapper>
-          } 
+            <ProtectedRoute requiredType="employee">
+              <Navigate to="dashboard" replace />
+            </ProtectedRoute>
+          }
         />
+
+        {/* ── Fallback ────────────────────────────────────────────────────── */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+
       </Routes>
     </AnimatePresence>
   );
@@ -80,7 +128,7 @@ function AnimatedRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AnimatedRoutes />
+      <AppRoutes />
     </BrowserRouter>
   );
 }

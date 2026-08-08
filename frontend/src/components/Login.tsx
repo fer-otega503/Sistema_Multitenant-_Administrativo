@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Hook de React Router para poder movernos entre páginas
 import ShinyText from './ShinyText';
 import { LightRays } from './LightRays';
 import SpecularButton from './SpecularButton';
-import DashboardInicio from './DashboardInicio';
-import EmpleadoDashboard from './EmpleadoDashboard';
 
 // Traemos las funciones que validan que el correo y contraseña cumplan las reglas de seguridad
 import { containsEmojis, validateLoginPassword, validateEmail } from '../validation/security';
@@ -12,6 +10,7 @@ import { containsEmojis, validateLoginPassword, validateEmail } from '../validat
 // Servicios para mandar la petición de login al backend y guardar la sesión/tokens
 import { AuthService } from '../services/auth.service';
 import { TokenService, UserSession } from '../utils/token';
+import { useAuthRedirect } from '../router/useAuthRedirect';
 
 // Tipo de dato para guardar los mensajes de error del formulario
 interface FormErrors {
@@ -25,6 +24,7 @@ type UserRole = 'Administrador' | 'Empleado';
 export function Login() {
   // Hook para cambiar de vista (por ejemplo, regresar al inicio '/')
   const navigate = useNavigate();
+  const { redirectAfterLogin } = useAuthRedirect();
 
   // --- ESTADOS LOCALES ---
   // Guarda si entramos como Administrador o Empleado
@@ -36,14 +36,8 @@ export function Login() {
   // Guarda los mensajes de error si falla la validación
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Controla si ya se inició sesión con éxito para cambiar de pantalla
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
   // Para mostrar estado de "Autenticando..." mientras responde el servidor
   const [isLoading, setIsLoading] = useState(false);
-
-  // Guarda los datos del usuario que nos regresa la API (nombre, empresa, etc.)
-  const [userData, setUserData] = useState<UserSession | null>(null);
 
 
 
@@ -107,9 +101,8 @@ export function Login() {
 
       console.log(`¡Ingreso exitoso! Empresa asociada: ${response.user.companyName} (${response.user.tenantId})`);
 
-      // Guardamos la información que nos devolvió el backend y pasamos a la siguiente vista
-      setUserData(response.user);
-      setIsSubmitted(true);
+      // Navegar a la URL correspondiente al rol (ProtectedRoute garantiza el acceso)
+      redirectAfterLogin();
 
     } catch (error: any) {
       // Si la API falla o los datos están mal, mostramos el mensaje de error recibido
@@ -121,30 +114,10 @@ export function Login() {
     }
   };
 
-  // Función para cerrar la sesión y reiniciar todo al estado inicial
-  const handleLogout = () => {
-    TokenService.clearSession(); // Borra tokens guardados
-    setIsSubmitted(false);
-    setUserData(null);
-    setCredentials({ email: '', password: '' });
-  };
+  // =========================================================================
+  // VISTA: FORMULARIO DE LOGIN PRINCIPAL
+  // =========================================================================
 
-  // =========================================================================
-  // 1. VISTA: SECCIÓN POST-LOGIN (Lo que se ve después de iniciar sesión)
-  // =========================================================================
-  if (isSubmitted) {
-    // PANTALLA EXCLUSIVA PARA EL ADMINISTRADOR
-    if (role === 'Administrador' || userData?.role === 'Administrador') {
-      return <DashboardInicio onLogout={handleLogout} />;
-    }
-
-    // PANTALLA DEL EMPLEADO (Empleado, Gerente, Limpieza, etc.)
-    return <EmpleadoDashboard onLogout={handleLogout} />;
-  }
-
-  // =========================================================================
-  // 2. VISTA: FORMULARIO DE LOGIN PRINCIPAL
-  // =========================================================================
   return (
     <main style={styles.appViewport}>
       {/* Botón para regresar a la página de bienvenida (Landing page) */}

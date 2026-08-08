@@ -78,6 +78,24 @@ const EmployeeFormModal = ({ empleadoInicial, onClose, onSaved, tenantId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [cajasDisponibles, setCajasDisponibles] = useState([]);
+
+  useEffect(() => {
+    const fetchCajas = async () => {
+      try {
+        const res = await fetch('http://localhost:3000/api/ventas/cajas', {
+          headers: { 'X-Tenant-ID': tenantId }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.exito) setCajasDisponibles(data.cajas);
+        }
+      } catch (err) {
+        console.error('Error al obtener cajas:', err);
+      }
+    };
+    fetchCajas();
+  }, [tenantId]);
 
 
   const handleChange = (e) => {
@@ -194,8 +212,13 @@ const EmployeeFormModal = ({ empleadoInicial, onClose, onSaved, tenantId }) => {
           {/* Caja Asignada */}
           <div style={rowStyle}>
             <label style={labelStyle}>Caja Asignada:</label>
-            <input name="no_caja" placeholder="Ej: CAJA-01" value={form.no_caja}
-              onChange={handleChange} style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+            <select name="no_caja" value={form.no_caja} onChange={handleChange}
+              style={{ ...inputStyle, cursor: 'pointer' }} onFocus={onFocus} onBlur={onBlur}>
+              <option value="">-- Seleccionar --</option>
+              {cajasDisponibles.map(caja => (
+                <option key={caja} value={caja}>{caja}</option>
+              ))}
+            </select>
           </div>
 
           {/* Contraseña */}

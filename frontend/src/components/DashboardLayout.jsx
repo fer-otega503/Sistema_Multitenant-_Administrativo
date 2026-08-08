@@ -40,7 +40,7 @@ const DashboardLayout = ({
     if (onLogout) {
       onLogout();
     } else {
-      navigate('/login');
+      navigate('/login', { replace: true });
     }
   };
 

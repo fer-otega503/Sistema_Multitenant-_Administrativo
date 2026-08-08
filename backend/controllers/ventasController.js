@@ -79,4 +79,41 @@ const getVentaDetalle = async (req, res) => {
   }
 };
 
-module.exports = { getVentaDetalle };
+/**
+ * GET /api/ventas/cajas
+ * Retorna la lista de cajas existentes (sin duplicados) basadas en la tabla sells.
+ */
+const getCajas = async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'] || 'ferreteria';
+  const isValidSchema = /^[a-zA-Z0-9_]+$/.test(tenantId);
+  if (!isValidSchema) {
+    return res.status(400).json({ error: 'Tenant ID inválido.' });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query(`SET search_path TO "${tenantId}";`);
+
+    const result = await client.query(`
+      SELECT DISTINCT no_caja FROM (
+        SELECT no_caja FROM sells WHERE no_caja IS NOT NULL AND TRIM(no_caja) != ''
+        UNION
+        SELECT no_caja FROM users WHERE no_caja IS NOT NULL AND TRIM(no_caja) != ''
+      ) AS c
+      ORDER BY no_caja ASC;
+    `);
+
+    res.json({
+      exito: true,
+      cajas: result.rows.map(r => r.no_caja)
+    });
+  } catch (error) {
+    console.error('[Ventas] Error al obtener cajas:', error);
+    res.status(500).json({ error: 'Error interno al consultar cajas.' });
+  } finally {
+    if (client) client.release();
+  }
+};
+
+module.exports = { getVentaDetalle, getCajas };

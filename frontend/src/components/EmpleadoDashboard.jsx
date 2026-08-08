@@ -9,23 +9,37 @@ const FONT         = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", 
 // ════════════════════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL: DASHBOARD EMPLEADO
 // ════════════════════════════════════════════════════════════════════════════
-const EmpleadoDashboard = ({ onLogout }) => {
-  const navigate = useNavigate();
-  const session  = TokenService.getUserSession();
-  const tenantId = session?.tenantId || 'ferreteria';
+const EmpleadoDashboard = ({ onLogout, activeSection: activeSectionProp }) => {
+  const navigate  = useNavigate();
+  const session   = TokenService.getUserSession();
+  const tenantId  = session?.tenantId || 'ferreteria';
+  const empId     = session?.id       || '';
 
   const userName    = session?.name        || 'Empleado';
   const userRole    = session?.role        || 'Empleado';
-  const companyName = session?.companyName || 'El Martillo Ferretería';
+  const companyName = session?.companyName || 'El Martillo Ferretera';
 
-  const [activeSection, setActiveSection] = useState('Inicio');
+  // La sección activa la dicta la URL, no el estado local
+  const activeSection = activeSectionProp ?? 'Inicio';
+
+  // Mapa de secciones a slugs de URL
+  const sectionToSlug = {
+    Inicio:     'dashboard',
+    Ventas:     'sells',
+    Inventario: 'inventory',
+  };
+
+  const handleNavigate = (sectionId) => {
+    const slug = sectionToSlug[sectionId] ?? 'dashboard';
+    navigate(`/${tenantId}/employee-${empId}/${slug}`);
+  };
 
   const handleLogout = () => {
     TokenService.clearSession();
     if (onLogout) {
       onLogout();
     } else {
-      navigate('/login');
+      navigate('/login', { replace: true });
     }
   };
 
@@ -116,7 +130,7 @@ const EmpleadoDashboard = ({ onLogout }) => {
               key={item.id}
               item={item}
               isActive={activeSection === item.id}
-              onClick={() => setActiveSection(item.id)}
+              onClick={() => handleNavigate(item.id)}
             />
           ))}
         </nav>
@@ -138,7 +152,7 @@ const EmpleadoDashboard = ({ onLogout }) => {
 
         {/* Contenido de la sección */}
         <main style={styles.mainBody}>
-          {activeSection === 'Inicio'     && <InicioEmpleado tenantId={tenantId} userName={userName} />}
+          {activeSection === 'Inicio'     && <InicioEmpleado tenantId={tenantId} userName={userName} userRole={userRole} empId={empId} onNavigate={handleNavigate} />}
           {activeSection === 'Ventas'     && <VentasView     tenantId={tenantId} />}
           {activeSection === 'Inventario' && <InventarioView tenantId={tenantId} />}
         </main>
@@ -148,9 +162,9 @@ const EmpleadoDashboard = ({ onLogout }) => {
 };
 
 // ════════════════════════════════════════════════════════════════════════════
-//  SECCIÓN: INICIO DEL EMPLEADO  (bienvenida + tarjetas de contexto)
+//  SECCIÓN: INICIO DEL EMPLEADO  (bienvenida + accesos rápidos funcionales)
 // ════════════════════════════════════════════════════════════════════════════
-const InicioEmpleado = ({ tenantId, userName }) => {
+const InicioEmpleado = ({ tenantId, userName, userRole, onNavigate }) => {
   const [metricas, setMetricas] = useState(null);
 
   useEffect(() => {
@@ -163,19 +177,19 @@ const InicioEmpleado = ({ tenantId, userName }) => {
           const d = await res.json();
           if (d.exito && d.metricas) setMetricas(d.metricas);
         }
-      } catch { /* offline - sin metricas */ }
+      } catch { /* offline */ }
     };
     fetch_();
   }, [tenantId]);
 
-  const hoy = new Date();
-  const hora = hoy.getHours();
+  const hoy    = new Date();
+  const hora   = hoy.getHours();
   const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches';
 
   return (
-    <div style={{ padding: '32px 36px' }}>
+    <div style={{ padding: '32px 36px', fontFamily: FONT }}>
 
-      {/* Banner de bienvenida estilo ferretería */}
+      {/* ─── Banner ──────────────────────────────────────────────────── */}
       <div style={welcomeStyles.banner}>
         <div style={welcomeStyles.bannerLeft}>
           <div style={welcomeStyles.bannerEmoji}>🔨</div>
@@ -198,7 +212,7 @@ const InicioEmpleado = ({ tenantId, userName }) => {
         </div>
       </div>
 
-      {/* Descripción de rol */}
+      {/* ─── Tarjeta del rol ─────────────────────────────────────────── */}
       <div style={welcomeStyles.roleCard}>
         <div style={welcomeStyles.roleIconBox}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
@@ -208,46 +222,51 @@ const InicioEmpleado = ({ tenantId, userName }) => {
           </svg>
         </div>
         <div>
-          <div style={welcomeStyles.roleTitle}>Tu Rol en el Sistema</div>
+          <div style={welcomeStyles.roleTitle}>
+            Tu Rol — <span style={{ color: '#1D4ED8' }}>{userRole}</span>
+          </div>
           <div style={welcomeStyles.roleDesc}>
-            Como <strong>Empleado</strong> tienes acceso a la consulta de ventas y al inventario de productos.
-            Puedes buscar, filtrar y consultar información, pero los cambios de configuración y la gestión de usuarios
-            están reservados para el Administrador.
+            Tienes acceso a la consulta de ventas y al inventario de productos.
+            Puedes buscar, filtrar y consultar información, pero la gestión de usuarios
+            y la configuración del sistema están reservadas para el Administrador.
           </div>
         </div>
       </div>
 
-      {/* Tarjetas de métricas (solo lectura) */}
+      {/* ─── Métricas del día (solo lectura) ─────────────────────────── */}
       {metricas && (
         <div style={welcomeStyles.cardsGrid}>
-          <MetricCard
-            title="Ventas del Día"
-            value={metricas.ventasDia}
-            icon="📊"
-            accent="#2563EB"
-          />
-          <MetricCard
-            title="Ventas del Mes"
-            value={metricas.ventasMes}
-            icon="📈"
-            accent="#059669"
-          />
-          <MetricCard
-            title="Stock en Inventario"
-            value={metricas.inventario}
-            icon="📦"
-            accent="#D97706"
-          />
+          <MetricCard title="Ventas del Día"      value={metricas.ventasDia}  icon="📊" accent="#2563EB" />
+          <MetricCard title="Ventas del Mes"      value={metricas.ventasMes}  icon="📈" accent="#059669" />
+          <MetricCard title="Stock en Inventario" value={metricas.inventario} icon="📦" accent="#D97706" />
         </div>
       )}
 
-      {/* Tips de uso rápido */}
+      {/* ─── Accesos rápidos con botones funcionales ─────────────────── */}
       <div style={welcomeStyles.tipsSection}>
         <div style={welcomeStyles.tipsTitle}>⚡ Accesos Rápidos</div>
         <div style={welcomeStyles.tipsGrid}>
-          <TipCard icon="🛒" title="Consultar Ventas" desc="Ve al menú Ventas para revisar el historial de transacciones." />
-          <TipCard icon="📦" title="Ver Inventario"   desc="Consulta existencias y precios desde el menú Inventario." />
-          <TipCard icon="🔍" title="Buscar Productos"  desc="Usa el campo Código para filtrar rápidamente en inventario." />
+          <QuickAccessCard
+            icon="🛒"
+            title="Consultar Ventas"
+            desc="Revisa el historial de transacciones registradas en tu caja."
+            btnLabel="Ir a Ventas"
+            onClick={() => onNavigate('Ventas')}
+          />
+          <QuickAccessCard
+            icon="📦"
+            title="Ver Inventario"
+            desc="Consulta existencias y precios de todos los productos."
+            btnLabel="Ir a Inventario"
+            onClick={() => onNavigate('Inventario')}
+          />
+          <QuickAccessCard
+            icon="🔍"
+            title="Buscar por Código"
+            desc="Filtra rápidamente cualquier producto por su código."
+            btnLabel="Ver Inventario"
+            onClick={() => onNavigate('Inventario')}
+          />
         </div>
       </div>
     </div>
@@ -274,17 +293,35 @@ const MetricCard = ({ title, value, icon, accent }) => (
   </div>
 );
 
-// Tip card
-const TipCard = ({ icon, title, desc }) => (
-  <div style={{
-    backgroundColor: '#F9FAFB', borderRadius: '8px', padding: '16px 18px',
-    border: '1px solid #E5E7EB', fontFamily: FONT,
-  }}>
-    <div style={{ fontSize: '22px', marginBottom: '8px' }}>{icon}</div>
-    <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>{title}</div>
-    <div style={{ fontSize: '13px', color: '#6B7280', lineHeight: '1.5' }}>{desc}</div>
-  </div>
-);
+// Tarjeta de acceso rápido CON botón funcional
+const QuickAccessCard = ({ icon, title, desc, btnLabel, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div style={{
+      backgroundColor: '#F9FAFB', borderRadius: '8px', padding: '18px 18px 14px',
+      border: '1px solid #E5E7EB', fontFamily: FONT,
+      display: 'flex', flexDirection: 'column', gap: '8px',
+    }}>
+      <div style={{ fontSize: '24px' }}>{icon}</div>
+      <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>{title}</div>
+      <div style={{ fontSize: '13px', color: '#6B7280', lineHeight: '1.5', flex: 1 }}>{desc}</div>
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          marginTop: '6px', padding: '8px 16px', borderRadius: '6px', border: 'none',
+          backgroundColor: hovered ? '#1D4ED8' : '#2563EB',
+          color: '#FFFFFF', fontSize: '13px', fontWeight: '600',
+          cursor: 'pointer', fontFamily: FONT, transition: 'background 0.15s',
+          alignSelf: 'flex-start',
+        }}
+      >
+        {btnLabel}
+      </button>
+    </div>
+  );
+};
 
 // ════════════════════════════════════════════════════════════════════════════
 //  SECCIÓN: VENTAS (solo consulta)  — importa y reutiliza Ventas.jsx
