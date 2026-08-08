@@ -6,7 +6,8 @@ const USER_KEY   = 'user_info';
 export interface UserSession {
   id:          string;
   email:       string;
-  role:        'Administrador' | 'Empleado' | 'Gestor';
+  // Todos los roles posibles del backend: Gestor/Administrador/Admin (admin) | Empleado/Gerente/Limpieza (employee)
+  role:        'Administrador' | 'Empleado' | 'Gestor' | 'Admin' | 'Gerente' | 'Limpieza' | string;
   tenantId:    string;
   companyName: string;
   name?:       string;

@@ -56,10 +56,13 @@ export const AuthService = {
       id:          String(data.usuario?.id ?? ''),
       email:       data.usuario?.email ?? credentials.email,
       name:        data.usuario?.nombre ?? credentials.email.split('@')[0],
-      role:        (data.usuario?.rol ?? credentials.role) as UserSession['role'],
+      // Usamos el rol real que devuelve el backend (Administrador, Gestor, Empleado, Gerente, Limpieza...)
+      // NO hacemos cast para no perder el valor
+      role:        (data.usuario?.rol ?? credentials.role),
       tenantId:    data.usuario?.tenant_id ?? tenantId,
       companyName: 'El Martillo Ferretería',
     };
+
 
     // Guardar el token y la sesión en localStorage
     TokenService.saveSession(data.token, user);

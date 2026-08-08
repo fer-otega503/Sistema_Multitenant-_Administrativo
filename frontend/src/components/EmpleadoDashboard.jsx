@@ -31,7 +31,7 @@ const EmpleadoDashboard = ({ onLogout, activeSection: activeSectionProp }) => {
 
   const handleNavigate = (sectionId) => {
     const slug = sectionToSlug[sectionId] ?? 'dashboard';
-    navigate(`/${tenantId}/employee-${empId}/${slug}`);
+    navigate(`/${tenantId}/employee/${empId}/${slug}`);
   };
 
   const handleLogout = () => {
@@ -52,28 +52,6 @@ const EmpleadoDashboard = ({ onLogout, activeSection: activeSectionProp }) => {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-      )
-    },
-    {
-      id: 'Ventas',
-      label: 'Ventas',
-      icon: (color) => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="8" cy="21" r="1"/>
-          <circle cx="19" cy="21" r="1"/>
-          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
-        </svg>
-      )
-    },
-    {
-      id: 'Inventario',
-      label: 'Inventario',
-      icon: (color) => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-          <polyline points="3.29 7 12 12 20.71 7"/>
-          <line x1="12" y1="22" x2="12" y2="12"/>
         </svg>
       )
     },
@@ -152,9 +130,7 @@ const EmpleadoDashboard = ({ onLogout, activeSection: activeSectionProp }) => {
 
         {/* Contenido de la sección */}
         <main style={styles.mainBody}>
-          {activeSection === 'Inicio'     && <InicioEmpleado tenantId={tenantId} userName={userName} userRole={userRole} empId={empId} onNavigate={handleNavigate} />}
-          {activeSection === 'Ventas'     && <VentasView     tenantId={tenantId} />}
-          {activeSection === 'Inventario' && <InventarioView tenantId={tenantId} />}
+          {activeSection === 'Inicio' && <InicioEmpleado tenantId={tenantId} userName={userName} userRole={userRole} empId={empId} onNavigate={handleNavigate} />}
         </main>
       </div>
     </div>
@@ -242,33 +218,6 @@ const InicioEmpleado = ({ tenantId, userName, userRole, onNavigate }) => {
         </div>
       )}
 
-      {/* ─── Accesos rápidos con botones funcionales ─────────────────── */}
-      <div style={welcomeStyles.tipsSection}>
-        <div style={welcomeStyles.tipsTitle}>⚡ Accesos Rápidos</div>
-        <div style={welcomeStyles.tipsGrid}>
-          <QuickAccessCard
-            icon="🛒"
-            title="Consultar Ventas"
-            desc="Revisa el historial de transacciones registradas en tu caja."
-            btnLabel="Ir a Ventas"
-            onClick={() => onNavigate('Ventas')}
-          />
-          <QuickAccessCard
-            icon="📦"
-            title="Ver Inventario"
-            desc="Consulta existencias y precios de todos los productos."
-            btnLabel="Ir a Inventario"
-            onClick={() => onNavigate('Inventario')}
-          />
-          <QuickAccessCard
-            icon="🔍"
-            title="Buscar por Código"
-            desc="Filtra rápidamente cualquier producto por su código."
-            btnLabel="Ver Inventario"
-            onClick={() => onNavigate('Inventario')}
-          />
-        </div>
-      </div>
     </div>
   );
 };

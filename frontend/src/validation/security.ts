@@ -3,7 +3,8 @@
  */
 
 const EMOJI_REGEX = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E6}-\u{1F1FF}]/u;
-const VALID_CHARS_REGEX = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/;
+// Acepta letras a-z, A-Z, dígitos, caracteres especiales comunes Y letras latinas con acento (áéíóúüñ, etc.)
+const VALID_CHARS_REGEX = /^[\w!@#$%^&*()+\-=\[\]{};':"\\|,.<>\/?\u00C0-\u024F]+$/;
 
 // Expresión regular estándar para validar correos estructurados correctamente
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -70,8 +71,8 @@ export const validateEmail = (email: string): ValidationResult => {
  * Realiza todas las comprobaciones de seguridad para la contraseña del login.
  */
 export const validateLoginPassword = (password: string): ValidationResult => {
-  if (password.length < 8 || password.length > 30) {
-    return { isValid: false, message: "La contraseña debe tener entre 8 y 30 caracteres." };
+  if (password.length < 6 || password.length > 64) {
+    return { isValid: false, message: "La contraseña debe tener al menos 6 caracteres." };
   }
 
   if (containsEmojis(password)) {

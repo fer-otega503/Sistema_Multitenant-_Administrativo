@@ -7,28 +7,43 @@ import { TokenService } from '../utils/token';
  * Hook que, después de un login exitoso, construye la URL semántica
  * correspondiente al rol del usuario y navega a ella.
  *
- * Reglas de routing:
- *   - Administrador / Gestor → /:tenant/admin/dashboard
- *   - Empleado / Gerente / Limpieza → /:tenant/employee-:id/dashboard
+ * Rutas:
+ *   - Admin/Gestor  → /:tenant/admin/dashboard
+ *   - Empleado/etc. → /:tenant/employee/:id/dashboard
  */
 export function useAuthRedirect() {
   const navigate = useNavigate();
 
-  /**
-   * Navega a la URL correcta según la sesión guardada.
-   * Debe llamarse después de que TokenService.saveSession() haya sido ejecutado.
-   */
   const redirectAfterLogin = () => {
     const session = TokenService.getUserSession();
-    if (!session) return;
+
+    console.group('[useAuthRedirect] redirectAfterLogin');
+    console.log('session:', session);
+
+    if (!session) {
+      console.warn('Sin sesión guardada — no se puede redirigir');
+      console.groupEnd();
+      return;
+    }
 
     const { tenantId, role, id } = session;
     const roleLower = (role ?? '').toLowerCase();
 
+    console.log(`tenantId="${tenantId}" role="${role}" roleLower="${roleLower}" id="${id}"`);
+
     if (roleLower === 'administrador' || roleLower === 'admin' || roleLower === 'gestor') {
-      navigate(`/${tenantId}/admin/dashboard`, { replace: true });
+      // Admin: /ferreteria/admin/dashboard
+      const url = `/${tenantId}/admin/dashboard`;
+      console.log('→ Admin URL:', url);
+      console.groupEnd();
+      navigate(url, { replace: true });
     } else {
-      navigate(`/${tenantId}/employee-${id}/dashboard`, { replace: true });
+      // Empleado: /ferreteria/employee/6/dashboard
+      // Segmentos separados para garantizar el parsing de React Router
+      const url = `/${tenantId}/employee/${id}/dashboard`;
+      console.log('→ Empleado URL:', url);
+      console.groupEnd();
+      navigate(url, { replace: true });
     }
   };
 

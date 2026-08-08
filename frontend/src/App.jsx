@@ -21,10 +21,6 @@ function AuthPageWrapper({ children }) {
   );
 }
 
-// ── Las rutas de dashboard NO tienen animación de página completa ─────────────
-// El cambio entre secciones se siente instantáneo porque solo
-// cambia el contenido interno del layout, no desmonta todo el árbol.
-
 // ── Página de Bienvenida ──────────────────────────────────────────────────────
 function WelcomePage() {
   const navigate = useNavigate();
@@ -75,7 +71,9 @@ function AppRoutes() {
           element={<AuthPageWrapper><Login /></AuthPageWrapper>}
         />
 
-        {/* ── Rutas de Administrador (sin PageWrapper — instantáneas) ─────── */}
+        {/* ── Rutas de Administrador ─────────────────────────────────────────
+            Ejemplo: /ferreteria/admin/dashboard
+        ─────────────────────────────────────────────────────────────────────── */}
         <Route
           path="/:tenant/admin/:section"
           element={
@@ -86,7 +84,6 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* Redirect a dashboard cuando se visita /:tenant/admin */}
         <Route
           path="/:tenant/admin"
           element={
@@ -96,9 +93,13 @@ function AppRoutes() {
           }
         />
 
-        {/* ── Rutas de Empleado (sin PageWrapper — instantáneas) ───────────── */}
+        {/* ── Rutas de Empleado ─────────────────────────────────────────────
+            Ejemplo: /ferreteria/employee/6/dashboard
+            NOTA: Los dos segmentos "employee" y ":empId" están separados
+                  para garantizar que React Router los parsee correctamente.
+        ─────────────────────────────────────────────────────────────────────── */}
         <Route
-          path="/:tenant/employee-:empId/:section"
+          path="/:tenant/employee/:empId/:section"
           element={
             <ProtectedRoute requiredType="employee">
               <div style={{ width: '100vw', height: '100vh', overflow: 'auto' }}>
@@ -107,9 +108,8 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* Redirect a dashboard cuando se visita /:tenant/employee-:empId */}
         <Route
-          path="/:tenant/employee-:empId"
+          path="/:tenant/employee/:empId"
           element={
             <ProtectedRoute requiredType="employee">
               <Navigate to="dashboard" replace />
