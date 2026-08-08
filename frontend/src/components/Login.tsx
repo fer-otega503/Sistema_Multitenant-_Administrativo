@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Hook de React Router para poder movernos entre páginas
 import ShinyText from './ShinyText';
-import { LightRays } from './LightRays'; 
-import SpecularButton from './SpecularButton'; 
-import PillNav from './PillNav/PillNav';
+import { LightRays } from './LightRays';
+import SpecularButton from './SpecularButton';
 import DashboardInicio from './DashboardInicio';
+import EmpleadoDashboard from './EmpleadoDashboard';
 
 // Traemos las funciones que validan que el correo y contraseña cumplan las reglas de seguridad
 import { containsEmojis, validateLoginPassword, validateEmail } from '../validation/security';
@@ -12,9 +12,6 @@ import { containsEmojis, validateLoginPassword, validateEmail } from '../validat
 // Servicios para mandar la petición de login al backend y guardar la sesión/tokens
 import { AuthService } from '../services/auth.service';
 import { TokenService, UserSession } from '../utils/token';
-
-// Ruta estática del logo que mostramos más adelante
-const logoUrl = '/src/assets/react.svg';
 
 // Tipo de dato para guardar los mensajes de error del formulario
 interface FormErrors {
@@ -32,36 +29,23 @@ export function Login() {
   // --- ESTADOS LOCALES ---
   // Guarda si entramos como Administrador o Empleado
   const [role, setRole] = useState<UserRole>('Administrador');
-  
+
   // Guarda lo que el usuario va escribiendo en los inputs
   const [credentials, setCredentials] = useState({ email: '', password: '' });
-  
+
   // Guarda los mensajes de error si falla la validación
   const [errors, setErrors] = useState<FormErrors>({});
-  
+
   // Controla si ya se inició sesión con éxito para cambiar de pantalla
   const [isSubmitted, setIsSubmitted] = useState(false);
-  
+
   // Para mostrar estado de "Autenticando..." mientras responde el servidor
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Guarda los datos del usuario que nos regresa la API (nombre, empresa, etc.)
   const [userData, setUserData] = useState<UserSession | null>(null);
 
-  // Controla qué pestaña está seleccionada en el menú del área de pruebas
-  const [activeTab, setActiveTab] = useState('#home');
 
-  // Guarda el estado del backend de Python (Analytics) para demostrar la integración
-  const [analyticsStatus, setAnalyticsStatus] = useState<any>(null);
-
-  useEffect(() => {
-    if (isSubmitted) {
-      fetch('http://localhost:3000/api/analytics/status')
-        .then(res => res.json())
-        .then(data => setAnalyticsStatus(data))
-        .catch(err => console.error("Error fetching analytics:", err));
-    }
-  }, [isSubmitted]);
 
   // Función sencilla para cambiar entre Admin y Empleado
   const changeRole = (newRole: UserRole) => {
@@ -71,11 +55,11 @@ export function Login() {
   // Función que detecta cuando el usuario escribe en los inputs de correo o contraseña
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     // Bloqueamos los emojis en la contraseña desde que se van escribiendo
     if (name === 'password' && containsEmojis(value)) {
       setErrors(prev => ({ ...prev, password: "La contraseña no puede contener emojis." }));
-      return; 
+      return;
     }
 
     // Si escribe algo válido, limpiamos el error del campo
@@ -88,7 +72,7 @@ export function Login() {
     if (e) {
       e.preventDefault(); // Evitamos que la página se recargue por defecto al enviar el form
     }
-    
+
     const currentErrors: FormErrors = {};
 
     // Validamos la estructura del correo
@@ -122,7 +106,7 @@ export function Login() {
       });
 
       console.log(`¡Ingreso exitoso! Empresa asociada: ${response.user.companyName} (${response.user.tenantId})`);
-      
+
       // Guardamos la información que nos devolvió el backend y pasamos a la siguiente vista
       setUserData(response.user);
       setIsSubmitted(true);
@@ -154,49 +138,8 @@ export function Login() {
       return <DashboardInicio onLogout={handleLogout} />;
     }
 
-    // VISTA RESTRINGIDA / EMPLEADO
-    const SafePillNav = PillNav as any;
-    return (
-      <main style={styles.whiteViewport}>
-        <header style={styles.navHeader}>
-          <SafePillNav
-            logo={logoUrl}
-            logoAlt="Logo de la Empresa"
-            items={[
-              { label: 'HOME', href: '#home', onClick: () => setActiveTab('#home') },
-              { label: 'ABOUT', href: '#about', onClick: () => setActiveTab('#about') },
-              { label: 'CONTACT', href: '#contact', onClick: () => setActiveTab('#contact') }
-            ]}
-            activeHref={activeTab}
-            className="custom-nav"
-            ease="power3.easeOut"
-            baseColor="#e5e7eb"
-            pillColor="#000000"
-            hoveredPillTextColor="#ffffff"
-            pillTextColor="#000000"
-            theme="light"
-            initialLoadAnimation={true}
-          />
-        </header>
-
-        <div style={styles.whiteContent}>
-          <h1 style={styles.whiteTitle}>Vista de Empleado</h1>
-          <p style={styles.whiteSubtitle}>
-            Has iniciado sesión como <strong>{userData?.role || role}</strong>.
-          </p>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', maxWidth: '400px', margin: '0 auto 1.5rem auto' }}>
-            El Dashboard principal de Métricas e Inventario está restringido únicamente al Administrador.
-          </p>
-          
-          <button 
-            style={styles.whiteButton} 
-            onClick={handleLogout}
-          >
-            Cerrar Sesión
-          </button>
-        </div>
-      </main>
-    );
+    // PANTALLA DEL EMPLEADO (Empleado, Gerente, Limpieza, etc.)
+    return <EmpleadoDashboard onLogout={handleLogout} />;
   }
 
   // =========================================================================
@@ -205,8 +148,8 @@ export function Login() {
   return (
     <main style={styles.appViewport}>
       {/* Botón para regresar a la página de bienvenida (Landing page) */}
-      <button 
-        onClick={() => navigate('/')} 
+      <button
+        onClick={() => navigate('/')}
         style={styles.backButton}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -234,16 +177,16 @@ export function Login() {
       {/* Tarjeta translúcida centrada con el formulario */}
       <div style={styles.interfaceLayer}>
         <form onSubmit={executeLogin} noValidate style={styles.glassCard}>
-          
+
           {/* Título animado con brillo que cambia según el rol */}
           <div style={styles.title}>
             <ShinyText
-              key={role} 
+              key={role}
               text={`Iniciar Sesión ${role}`}
               speed={2.5}
               delay={0}
-              color="#94a3b8"       
-              shineColor="#ffffff"   
+              color="#94a3b8"
+              shineColor="#ffffff"
               spread={120}
               direction="left"
               yoyo={false}
@@ -251,19 +194,19 @@ export function Login() {
               disabled={false}
             />
           </div>
-          
+
           {/* Campo de texto: Correo Electrónico */}
-          <div 
+          <div
             style={{
               ...styles.inputContainer,
               borderColor: errors.email ? '#ef4444' : 'rgba(255, 255, 255, 0.08)',
               boxShadow: errors.email ? '0 0 10px rgba(239, 68, 68, 0.15)' : 'none'
             }}
           >
-            <input 
+            <input
               name="email"
-              type="text" 
-              placeholder="Correo electrónico" 
+              type="text"
+              placeholder="Correo electrónico"
               value={credentials.email}
               onChange={handleInputChange}
               disabled={isLoading}
@@ -277,17 +220,17 @@ export function Login() {
           </div>
 
           {/* Campo de texto: Contraseña */}
-          <div 
+          <div
             style={{
               ...styles.inputContainer,
               borderColor: errors.password ? '#ef4444' : 'rgba(255, 255, 255, 0.08)',
               boxShadow: errors.password ? '0 0 10px rgba(239, 68, 68, 0.15)' : 'none'
             }}
           >
-            <input 
+            <input
               name="password"
-              type="password" 
-              placeholder="Contraseña" 
+              type="password"
+              placeholder="Contraseña"
               value={credentials.password}
               onChange={handleInputChange}
               disabled={isLoading}
@@ -330,7 +273,7 @@ export function Login() {
       {/* --- SELECTOR FLOTANTE PARA CAMBIAR DE ROL (ADMIN / EMPLEADO) --- */}
       <div style={styles.roleSelectorContainer}>
         {/* Fondo azul deslizante con animación suave */}
-        <div 
+        <div
           style={{
             ...styles.slidingBackground,
             transform: role === 'Empleado' ? 'translateY(52px)' : 'translateY(0px)'
@@ -338,7 +281,7 @@ export function Login() {
         />
 
         {/* Opción 1: Administrador */}
-        <div 
+        <div
           style={{
             ...styles.roleOption,
             color: role === 'Administrador' ? '#ffffff' : '#52525b'
@@ -362,7 +305,7 @@ export function Login() {
         </div>
 
         {/* Opción 2: Empleado */}
-        <div 
+        <div
           style={{
             ...styles.roleOption,
             color: role === 'Empleado' ? '#ffffff' : '#52525b'
@@ -447,7 +390,7 @@ const styles = {
     boxSizing: 'border-box' as 'border-box'
   },
   title: {
-    fontSize: '1.75rem', 
+    fontSize: '1.75rem',
     marginBottom: '2rem',
     fontWeight: '600',
     display: 'flex',
@@ -462,7 +405,7 @@ const styles = {
     borderRadius: '14px',
     border: '1.5px solid rgba(255, 255, 255, 0.08)',
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    padding: '0.8rem 1.1rem 0.6rem 1.1rem', 
+    padding: '0.8rem 1.1rem 0.6rem 1.1rem',
     boxSizing: 'border-box' as 'border-box',
     display: 'flex',
     flexDirection: 'column' as 'column',
@@ -480,7 +423,7 @@ const styles = {
   },
   innerErrorText: {
     alignSelf: 'flex-end',
-    color: '#f87171', 
+    color: '#f87171',
     fontSize: '0.72rem',
     fontWeight: '500',
     marginTop: '4px',
@@ -506,20 +449,20 @@ const styles = {
     justifyContent: 'center',
     width: '100%'
   },
-  
+
   // Estilos del menú flotante selector de rol (Admin / Empleado)
   roleSelectorContainer: {
     position: 'fixed' as 'fixed',
-    bottom: '40px', 
+    bottom: '40px',
     left: '40px',
     display: 'flex',
     flexDirection: 'column' as 'column',
     gap: '8px',
-    zIndex: 1000, 
-    backgroundColor: 'rgba(9, 11, 18, 0.9)', 
+    zIndex: 1000,
+    backgroundColor: 'rgba(9, 11, 18, 0.9)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.04)', 
+    border: '1px solid rgba(255, 255, 255, 0.04)',
     padding: '8px',
     borderRadius: '26px',
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
@@ -531,22 +474,22 @@ const styles = {
     position: 'absolute' as 'absolute',
     top: '8px',
     left: '8px',
-    width: '192px', 
-    height: '44px', 
+    width: '192px',
+    height: '44px',
     borderRadius: '22px',
-    backgroundColor: 'rgba(17, 34, 64, 0.65)', 
-    border: '1px solid #1d4ed8',                  
-    transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)', 
+    backgroundColor: 'rgba(17, 34, 64, 0.65)',
+    border: '1px solid #1d4ed8',
+    transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
     pointerEvents: 'none' as 'none',
     zIndex: 1,
   },
   roleOption: {
     position: 'relative' as 'relative',
-    zIndex: 2, 
+    zIndex: 2,
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    width: '100%', 
+    width: '100%',
     height: '44px',
     padding: '0 12px',
     borderRadius: '22px',
@@ -579,7 +522,7 @@ const styles = {
     height: '100vh',
     backgroundColor: '#f1f1f1',
     backgroundImage: 'radial-gradient(#bababa 1.2px, transparent 1.2px)',
-    backgroundSize: '28px 28px', 
+    backgroundSize: '28px 28px',
     display: 'flex',
     flexDirection: 'column' as 'column',
     justifyContent: 'center',
@@ -611,7 +554,7 @@ const styles = {
     marginTop: '80px',
   },
   whiteTitle: {
-    color: '#120F17', 
+    color: '#120F17',
     fontSize: '2.5rem',
     fontWeight: '800',
     margin: 0,
@@ -633,7 +576,7 @@ const styles = {
   },
   whiteButton: {
     padding: '12px 24px',
-    backgroundColor: '#120F17', 
+    backgroundColor: '#120F17',
     color: '#ffffff',
     border: 'none',
     borderRadius: '8px',

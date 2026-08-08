@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Inicio from './Inicio';
 import Ventas from './Ventas';
 import Inventario from './Inventario';
+import Empleados from './Empleados';
+import { TokenService } from '../utils/token';
 
 /**
  * Layout Principal (DashboardLayout)
@@ -17,10 +20,11 @@ const DashboardLayout = ({
   rol = 'ADMINISTRADOR / EJECUTIVO',
   activeSection,   // sección activa controlada externamente (opcional)
   onNavigate,      // callback cuando se cambia de sección (opcional)
+  onLogout,        // callback de cierre de sesión (opcional)
 }) => {
+  const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState('Inicio');
 
-  // Si el padre controla la navegación, usamos su valor; si no, el estado interno
   const currentSection = activeSection ?? activeItem;
 
   const handleMenuClick = (id) => {
@@ -28,6 +32,15 @@ const DashboardLayout = ({
       onNavigate(id);
     } else {
       setActiveItem(id);
+    }
+  };
+
+  const handleLogout = () => {
+    TokenService.clearSession();
+    if (onLogout) {
+      onLogout();
+    } else {
+      navigate('/login');
     }
   };
 
@@ -61,6 +74,18 @@ const DashboardLayout = ({
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
           <polyline points="3.29 7 12 12 20.71 7"/>
           <line x1="12" y1="22" x2="12" y2="12"/>
+        </svg>
+      )
+    },
+    {
+      id: 'Empleados',
+      label: 'Empleados',
+      icon: (color) => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
       )
     }
@@ -107,6 +132,11 @@ const DashboardLayout = ({
             />
           ))}
         </nav>
+
+        {/* Botón Cerrar Sesión – anclado al fondo del sidebar */}
+        <div style={styles.logoutContainer}>
+          <LogoutButton onClick={handleLogout} />
+        </div>
       </aside>
 
       {/* Área de Contenido Principal */}
@@ -126,7 +156,9 @@ const DashboardLayout = ({
               ? <Ventas />
               : currentSection === 'Inventario'
                 ? <Inventario />
-                : <Inicio />
+                : currentSection === 'Empleados'
+                  ? <Empleados />
+                  : <Inicio />
           }
         </main>
       </div>
@@ -249,7 +281,14 @@ const styles = {
   navContainer: {
     padding: '0 12px',
     display: 'flex',
-    flexDirection: 'column'
+    flexDirection: 'column',
+    flex: 1,
+    overflowY: 'auto',
+  },
+  logoutContainer: {
+    padding: '12px 16px 20px',
+    borderTop: '1px solid rgba(255,255,255,0.07)',
+    flexShrink: 0,
   },
   contentArea: {
     flex: 1,
@@ -264,4 +303,43 @@ const styles = {
   }
 };
 
+// ─── Botón de Cerrar Sesión ───────────────────────────────────────────────────
+const LogoutButton = ({ onClick }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        padding: '11px 14px',
+        borderRadius: '6px',
+        border: 'none',
+        backgroundColor: hovered ? 'rgba(239,68,68,0.15)' : 'transparent',
+        color: hovered ? '#FCA5A5' : '#6B7280',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: '500',
+        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        transition: 'all 0.2s ease',
+        textAlign: 'left',
+      }}
+    >
+      {/* Ícono de salida */}
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      Cerrar Sesión
+    </button>
+  );
+};
+
 export default DashboardLayout;
+

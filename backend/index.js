@@ -6,6 +6,7 @@ const tenantRoutes = require('./routes/tenantRoutes'); // 🔌 Importamos las ru
 const dashboardRoutes = require('./routes/dashboardRoutes'); // 🔌 Importamos las rutas del dashboard
 const ventasRoutes = require('./routes/ventasRoutes'); // 🔌 Importamos las rutas de ventas
 const inventarioRoutes = require('./routes/inventarioRoutes'); // 🔌 Importamos las rutas de inventario
+const empleadosRoutes  = require('./routes/empleadosRoutes');  // 🔌 Importamos las rutas de empleados
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/api/tenants', tenantRoutes); // Montamos las rutas de registro de nego
 app.use('/api/dashboard', dashboardRoutes); // Montamos las rutas del dashboard de métricas
 app.use('/api/ventas', ventasRoutes); // Montamos las rutas de consulta de ventas
 app.use('/api/inventario', inventarioRoutes); // Montamos las rutas del inventario de productos
+app.use('/api/empleados',  empleadosRoutes);  // Montamos las rutas de gestión de empleados
 
 // ------------------------------------------
 // 🔍 ENDPOINTS DE PRUEBA (Los de control inicial)
