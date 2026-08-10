@@ -116,4 +116,94 @@ const getCajas = async (req, res) => {
   }
 };
 
-module.exports = { getVentaDetalle, getCajas };
+/**
+ * POST /api/ventas
+ * Crea una nueva venta, registra detalles y descuenta inventario.
+ */
+const crearVenta = async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'] || 'ferreteria';
+  const { no_caja, detalles } = req.body;
+
+  if (!no_caja || !detalles || !Array.isArray(detalles) || detalles.length === 0) {
+    return res.status(400).json({ error: 'Faltan datos de la venta (no_caja o detalles).' });
+  }
+
+  const isValidSchema = /^[a-zA-Z0-9_]+$/.test(tenantId);
+  if (!isValidSchema) {
+    return res.status(400).json({ error: 'Tenant ID inválido.' });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query(`SET search_path TO "${tenantId}";`);
+    await client.query('BEGIN');
+
+    let totalVenta = 0;
+    const productosValidados = [];
+
+    // Validar productos y calcular total real desde la DB
+    for (const item of detalles) {
+      const prodRes = await client.query(
+        'SELECT id, nombre, precio_venta, stock FROM products WHERE codigo = $1 OR id::text = $1',
+        [item.producto_id]
+      );
+
+      if (prodRes.rows.length === 0) {
+        throw new Error(`Producto con ID/Código ${item.producto_id} no encontrado.`);
+      }
+
+      const dbProduct = prodRes.rows[0];
+      const cantidad = Number(item.cantidad);
+
+      if (isNaN(cantidad) || cantidad <= 0) {
+        throw new Error(`Cantidad inválida para producto ${dbProduct.nombre}.`);
+      }
+
+      if (Number(dbProduct.stock) < cantidad) {
+        throw new Error(`Stock insuficiente para ${dbProduct.nombre}. Disponible: ${dbProduct.stock}`);
+      }
+
+      const precio = Number(dbProduct.precio_venta);
+      totalVenta += (precio * cantidad);
+
+      productosValidados.push({
+        id: dbProduct.id,
+        precio: precio,
+        cantidad: cantidad
+      });
+    }
+
+    // 1. Insertar venta
+    const sellRes = await client.query(
+      'INSERT INTO sells (no_caja, total) VALUES ($1, $2) RETURNING id, fecha',
+      [no_caja, totalVenta]
+    );
+    const newSellId = sellRes.rows[0].id;
+    const fecha = sellRes.rows[0].fecha;
+
+    // 2. Insertar detalles y actualizar stock
+    for (const prod of productosValidados) {
+      await client.query(
+        'INSERT INTO sell_details (sell_id, product_id, cantidad, precio_unitario) VALUES ($1, $2, $3, $4)',
+        [newSellId, prod.id, prod.cantidad, prod.precio]
+      );
+
+      await client.query(
+        'UPDATE products SET stock = stock - $1 WHERE id = $2',
+        [prod.cantidad, prod.id]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ exito: true, mensaje: 'Venta registrada con éxito.', venta_id: newSellId, total: totalVenta, fecha });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    console.error('[Ventas] Error al crear venta:', error);
+    res.status(500).json({ error: error.message || 'Error interno al registrar la venta.' });
+  } finally {
+    if (client) client.release();
+  }
+};
+
+module.exports = { getVentaDetalle, getCajas, crearVenta };
