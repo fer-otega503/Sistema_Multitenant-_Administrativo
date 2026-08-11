@@ -1,5 +1,9 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Lectura de la cadena de conexión a la base de datos PostgreSQL desde la variable de entorno
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = FastAPI(
     title="Analytics Service - Sistema Multitenant",

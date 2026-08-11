@@ -8,18 +8,18 @@ const router = express.Router();
  */
 router.get('/status', async (req, res) => {
   try {
-    // URL del backend en Python (por defecto FastAPI corre en el 8000)
-    const pythonApiUrl = 'http://127.0.0.1:8000/api/analytics/status';
-    
+    // URL del backend en Python (se puede configurar mediante variable de entorno ANALYTICS_SERVICE_URL)
+    const analyticsUrl = process.env.ANALYTICS_SERVICE_URL || 'http://[IP_ADDRESS]';
+
     // Usamos el fetch nativo de Node.js (Node 18+)
-    const response = await fetch(pythonApiUrl);
-    
+    const response = await fetch(`${analyticsUrl}/api/analytics/status`);
+
     if (!response.ok) {
       throw new Error(`Error del servidor Python: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Retornamos la data proveniente del backend en Python al Frontend
     res.json(data);
   } catch (error) {
