@@ -40,6 +40,69 @@ app.get('/api/status', (req, res) => {
 // y aislada dentro del sistema modular en sus respectivos controladores.
 
 // ------------------------------------------
+// 🌱 RUTA TEMPORAL DE SEEDING
+// ------------------------------------------
+const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+
+app.get('/api/ejecutar-seed', async (req, res) => {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  let client;
+  try {
+    client = await pool.connect();
+    const SCHEMA_NAME = 'ferreteria';
+
+    // 1. Crear esquema y tablas principales
+    await client.query(`CREATE SCHEMA IF NOT EXISTS "${SCHEMA_NAME}";`);
+    await client.query(`SET search_path TO "${SCHEMA_NAME}";`);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "${SCHEMA_NAME}".users (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        rol VARCHAR(50) NOT NULL
+      );
+    `);
+
+    // 2. Insertar al usuario Administrador
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash('admins123456789', salt);
+
+    await client.query(`
+      INSERT INTO "${SCHEMA_NAME}".users (nombre, email, password, rol)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (email) DO UPDATE
+        SET nombre = EXCLUDED.nombre,
+            password = EXCLUDED.password,
+            rol = EXCLUDED.rol;
+    `, ['Admin Ferretería', 'admin1234@gmail.com', hashedPassword, 'Gestor']);
+
+    res.json({
+      exito: true,
+      mensaje: '✅ Base de datos sembrada correctamente con el usuario administrador.',
+      credenciales: {
+        email: 'admin1234@gmail.com',
+        password: 'admins123456789',
+        rol: 'Gestor',
+        tenant: 'ferreteria'
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ exito: false, error: error.message });
+  } finally {
+    if (client) client.release();
+    await pool.end();
+  }
+});
+
+// ------------------------------------------
 // 🚀 ENCENDIDO DEL MOTOR
 // ------------------------------------------
 const PORT = process.env.PORT || 3000;
