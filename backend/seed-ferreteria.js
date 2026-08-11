@@ -2,34 +2,38 @@
  * seed-ferreteria.js
  * 
  * Script de inicialización del esquema "ferreteria" en PostgreSQL.
- * Crea el esquema, todas las tablas y los datos de ejemplo (usuario Gestor + productos + ventas).
- * 
- * Uso: node backend/seed-ferreteria.js
- * 
- * CREDENCIALES DE EJEMPLO INSERTADAS:
- *   Email:      admin1234@gmail.com
- *   Contraseña: admins123456789
- *   Rol:        Gestor
+ * Crea el esquema, todas las tablas y los datos de ejemplo (usuario Gestor/Admin + productos + ventas).
+ * Compatible con entornos locales y producción en la nube (Render) vía DATABASE_URL + SSL.
  */
 
 require('dotenv').config();
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
+// Configuración de conexión dinámica (Soporta DATABASE_URL de Render con SSL obligatorio)
+const poolConfig = process.env.DATABASE_URL
+  ? {
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  }
+  : {
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  };
+
+const pool = new Pool(poolConfig);
 
 const SCHEMA_NAME = 'ferreteria';
 
+// CREDENCIALES DEL ADMINISTRADOR
 const ADMIN_EMAIL = 'admin1234@gmail.com';
 const ADMIN_PASSWORD = 'admins123456789';
 const ADMIN_NOMBRE = 'Admin Ferretería';
-const ADMIN_ROL = 'Gestor';
+const ADMIN_ROL = 'Gestor'; // Ajustado a tu sistema multitenant
 
 async function seedFerreteria() {
   let client;
@@ -110,9 +114,9 @@ async function seedFerreteria() {
     console.log('   → Tabla "sell_details" lista.');
 
     // ─────────────────────────────────────────────
-    // 6. Insertar usuario Gestor de ejemplo
+    // 6. Insertar usuario Gestor/Admin de ejemplo
     // ─────────────────────────────────────────────
-    console.log(`\n👤 Insertando usuario Gestor: ${ADMIN_EMAIL}...`);
+    console.log(`\n👤 Insertando usuario Administrador: ${ADMIN_EMAIL}...`);
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
@@ -139,7 +143,7 @@ async function seedFerreteria() {
         ('2026003', 'Cemento Cruz Azul',      'Bulto de cemento gris 50kg',                       180.00,  220.00, 'PZ',  100.00),
         ('2026004', 'Cable de cobre cal. 12', 'Rollo de cable THW 100m color rojo',               600.00,  950.00, 'PZ',   10.00),
         ('2026005', 'Tornillo pija 1"',       'Tornillo pija cabeza plana',                         0.50,    1.50, 'PZ',  500.00),
-        ('2026006', 'Lija de agua #220',      'Hoja de lija de agua grano 220',                    5.00,   12.00, 'PZ',  200.00),
+        ('2026006', 'Lija de agua #220',      'Hoja de lija de agua grano 220',                     5.00,   12.00, 'PZ',  200.00),
         ('2026007', 'Pintura vinílica blanca','Cubeta 20L pintura vinílica interior/exterior',    320.00,  480.00, 'PZ',   15.00),
         ('FER-008', 'Flexómetro 5m',          'Cinta métrica de 5 metros con cuerpo antidesliz',   45.00,   85.00, 'PZ',   30.00)
       ON CONFLICT (codigo) DO NOTHING;
