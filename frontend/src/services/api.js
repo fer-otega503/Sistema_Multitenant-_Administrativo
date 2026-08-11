@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Instancia global y aislada para la API Gateway
-const apiClient = axios.create({
+const API = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
   timeout: 10000,
   headers: {
@@ -17,7 +17,7 @@ const apiClient = axios.create({
  */
 export const authenticateUser = async (username, password, tenant) => {
   try {
-    const response = await apiClient.post('/auth/login', {
+    const response = await API.post('/auth/login', {
       email: username,
       password,
       tenant,
@@ -27,3 +27,5 @@ export const authenticateUser = async (username, password, tenant) => {
     throw error.response?.data?.error || 'Error crítico en la infraestructura de red.';
   }
 };
+
+export default API;
