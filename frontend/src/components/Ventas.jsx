@@ -3,6 +3,8 @@ import { TokenService } from '../utils/token';
 import ErrorModal from './ErrorModal';
 import ReporteImpresion from './ReporteImpresion';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
 /**
  * Ventas
  * Pantalla de consulta de ventas para el Administrador.
@@ -46,7 +48,7 @@ const Ventas = () => {
       const tenantId  = session?.tenantId || 'ferreteria';
 
       const res = await fetch(
-        `http://localhost:3000/api/ventas/detalle?sell_id=${encodeURIComponent(noVenta.trim())}&no_caja=${encodeURIComponent(noCaja.trim())}`,
+        `${API_BASE}/ventas/detalle?sell_id=${encodeURIComponent(noVenta.trim())}&no_caja=${encodeURIComponent(noCaja.trim())}`,
         {
           headers: { 'X-Tenant-ID': tenantId },
         }

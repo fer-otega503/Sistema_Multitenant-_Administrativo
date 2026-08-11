@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import DashboardCard from './DashboardCard';
 import { TokenService } from '../utils/token';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
 /**
  * Vista de Inicio (Dashboard Principal)
  * Contiene un CSS Grid con 3 tarjetas proporcionales para Ventas del Día, Ventas del Mes e Inventario.
@@ -19,7 +21,7 @@ const Inicio = () => {
       try {
         const session  = TokenService.getUserSession();
         const tenantId = session?.tenantId || 'ferreteria';
-        const res = await fetch('http://localhost:3000/api/dashboard/metrics', {
+        const res = await fetch(`${API_BASE}/dashboard/metrics`, {
           headers: { 'x-tenant-id': tenantId }
         });
         if (res.ok) {

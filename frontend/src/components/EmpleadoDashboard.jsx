@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { TokenService } from '../utils/token';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
+const API_BASE     = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const DARK_SIDEBAR = '#111827';
 const FONT         = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
@@ -166,7 +167,7 @@ const InicioEmpleado = ({ tenantId, userName, userRole, onNavigate }) => {
   useEffect(() => {
     const fetch_ = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/dashboard/metrics', {
+        const res = await fetch(`${API_BASE}/dashboard/metrics`, {
           headers: { 'x-tenant-id': tenantId }
         });
         if (res.ok) {
@@ -311,8 +312,8 @@ const InventarioView = ({ tenantId }) => {
     setApiError(null);
     try {
       const url = codigo.trim()
-        ? `http://localhost:3000/api/inventario/productos?codigo=${encodeURIComponent(codigo.trim())}`
-        : `http://localhost:3000/api/inventario/productos`;
+        ? `${API_BASE}/inventario/productos?codigo=${encodeURIComponent(codigo.trim())}`
+        : `${API_BASE}/inventario/productos`;
       const res = await fetch(url, { headers: { 'X-Tenant-ID': tenantId } });
       if (!res.ok) { setApiError('Error al cargar el inventario.'); return; }
       const data = await res.json();

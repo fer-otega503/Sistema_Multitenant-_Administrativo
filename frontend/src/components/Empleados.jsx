@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TokenService } from '../utils/token';
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
-const DARK_HEADER = '#111634';
-const FONT        = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+// ─── Constantes ───────────────────────────────────────────────────────────────────
+const API_BASE       = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const DARK_HEADER    = '#111634';
+const FONT           = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 const ROLES_EMPLEADO = ['Empleado', 'Gerente', 'Limpieza'];
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -83,7 +84,7 @@ const EmployeeFormModal = ({ empleadoInicial, onClose, onSaved, tenantId }) => {
   useEffect(() => {
     const fetchCajas = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/ventas/cajas', {
+        const res = await fetch(`${API_BASE}/ventas/cajas`, {
           headers: { 'X-Tenant-ID': tenantId }
         });
         if (res.ok) {
@@ -116,8 +117,8 @@ const EmployeeFormModal = ({ empleadoInicial, onClose, onSaved, tenantId }) => {
     setIsLoading(true);
     try {
       const url    = isEdit
-        ? `http://localhost:3000/api/empleados/${empleadoInicial.id}`
-        : `http://localhost:3000/api/empleados`;
+        ? `${API_BASE}/empleados/${empleadoInicial.id}`
+        : `${API_BASE}/empleados`;
       const method = isEdit ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -333,8 +334,8 @@ const Empleados = () => {
     setApiError(null);
     try {
       const url = nombre.trim()
-        ? `http://localhost:3000/api/empleados?nombre=${encodeURIComponent(nombre.trim())}`
-        : `http://localhost:3000/api/empleados`;
+        ? `${API_BASE}/empleados?nombre=${encodeURIComponent(nombre.trim())}`
+        : `${API_BASE}/empleados`;
 
       const res = await fetch(url, {
         headers: {
@@ -375,7 +376,7 @@ const Empleados = () => {
     if (!modalDelete) return;
     setApiError(null);
     try {
-      const res = await fetch(`http://localhost:3000/api/empleados/${modalDelete.id}`, {
+      const res = await fetch(`${API_BASE}/empleados/${modalDelete.id}`, {
         method: 'DELETE',
         headers: {
           'X-Tenant-ID': tenantId,

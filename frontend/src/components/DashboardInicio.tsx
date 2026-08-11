@@ -4,6 +4,8 @@ import DashboardLayout from './DashboardLayout';
 import DashboardCard from './DashboardCard';
 import { TokenService } from '../utils/token';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
 interface DashboardInicioProps {
   onLogout?: () => void;
 }
@@ -51,7 +53,7 @@ const DashboardInicio: React.FC<DashboardInicioProps> = ({ onLogout }) => {
     // 2. Obtener métricas desde el Backend
     const fetchMetrics = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/dashboard/metrics', {
+        const response = await fetch(`${API_BASE}/dashboard/metrics`, {
           headers: {
             'x-tenant-id': sessionUser?.tenantId || 'schema_ferreteria'
           }

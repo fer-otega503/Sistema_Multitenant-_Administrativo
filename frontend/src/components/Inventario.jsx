@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { TokenService } from '../utils/token';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
+const API_BASE    = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const DARK_HEADER = '#111634';
 const FONT        = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
@@ -130,8 +131,8 @@ const ProductFormModal = ({ productoInicial, onClose, onSaved, tenantId }) => {
     setIsLoading(true);
     try {
       const url = isEdit
-        ? `http://localhost:3000/api/inventario/productos/${productoInicial.id}`
-        : `http://localhost:3000/api/inventario/productos`;
+        ? `${API_BASE}/inventario/productos/${productoInicial.id}`
+        : `${API_BASE}/inventario/productos`;
 
       const method = isEdit ? 'PUT' : 'POST';
 
@@ -319,8 +320,8 @@ const Inventario = () => {
     setApiError(null);
     try {
       const url = codigo.trim()
-        ? `http://localhost:3000/api/inventario/productos?codigo=${encodeURIComponent(codigo.trim())}`
-        : `http://localhost:3000/api/inventario/productos`;
+        ? `${API_BASE}/inventario/productos?codigo=${encodeURIComponent(codigo.trim())}`
+        : `${API_BASE}/inventario/productos`;
 
       const res = await fetch(url, { headers: { 'X-Tenant-ID': tenantId } });
       if (!res.ok) {
@@ -359,7 +360,7 @@ const Inventario = () => {
     setModalEliminar(false);
     setApiError(null);
     try {
-      const res = await fetch('http://localhost:3000/api/inventario/productos', {
+      const res = await fetch(`${API_BASE}/inventario/productos`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

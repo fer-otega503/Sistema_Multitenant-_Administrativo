@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { TokenService } from '../utils/token';
 import ErrorModal from './ErrorModal';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
 const PuntoDeVenta = () => {
   const session = TokenService.getUserSession();
   const tenantId = session?.tenantId || 'ferreteria';
@@ -26,7 +28,7 @@ const PuntoDeVenta = () => {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/inventario/productos?codigo=${encodeURIComponent(codigo.trim())}`, {
+      const res = await fetch(`${API_BASE}/inventario/productos?codigo=${encodeURIComponent(codigo.trim())}`, {
         headers: { 'X-Tenant-ID': tenantId }
       });
 
@@ -94,7 +96,7 @@ const PuntoDeVenta = () => {
       // No. de Caja podría venir del empleado o ser genérico, usamos CAJA-01 por ahora
       const no_caja = 'CAJA-01'; 
 
-      const res = await fetch('http://localhost:3000/api/ventas', {
+      const res = await fetch(`${API_BASE}/ventas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

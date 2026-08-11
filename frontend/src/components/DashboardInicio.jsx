@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import DashboardLayout from './DashboardLayout';
 import { TokenService } from '../utils/token';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
 /**
  * Pantalla Principal DashboardInicio
  * PANTALLA EXCLUSIVA PARA EL ROL DE ADMINISTRADOR / GESTOR.
@@ -46,7 +48,7 @@ const DashboardInicio = ({ activeSection: activeSectionProp }) => {
     // Consumir métricas del backend
     const fetchMetrics = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/dashboard/metrics', {
+        const response = await fetch(`${API_BASE}/dashboard/metrics`, {
           headers: { 'x-tenant-id': tenantId }
         });
         if (response.ok) {
